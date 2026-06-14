@@ -21,7 +21,9 @@ internal sealed class QuestInfo : IQuestInfo
 {
     public QuestInfo(ExcelQuest ogquest, uint newGamePlusChapter, byte startingCity, JournalGenreOverrides journalGenreOverrides)
     {
-        TempQuest quest = Svc.Data.GetExcelSheet<TempQuest>().GetRow(ogquest.RowId);
+        // API12 / game 7.1: TempQuest (custom 7.5-layout sheet) is incompatible — column hash mismatch
+        // crashes plugin load. Stock ExcelQuest already exposes the columns we need; use it directly.
+        ExcelQuest quest = ogquest;
         QuestId = QQuestId.FromRowId(quest.RowId);
 
         string suffix = QuestId.Value switch

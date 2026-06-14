@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
@@ -344,8 +344,11 @@ internal sealed class PriorityWindow : LWindow
             ImGui.EndCombo();
         }
 
-        ImGui.TextColoredWrapped(ImGuiColors.DalamudRed, _L("Selecting a preset will override your current priority list and activate the preset. " +
+        // API12 lacks ImGui.TextColoredWrapped — bridge via PushStyleColor + TextWrapped.
+        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+        ImGui.TextWrapped(_L("Selecting a preset will override your current priority list and activate the preset. " +
             "You can save your current list as a preset by entering a name below and selecting Save."));
+        ImGui.PopStyleColor();
 
         ImGui.Spacing();
 

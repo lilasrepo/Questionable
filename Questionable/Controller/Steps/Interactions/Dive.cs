@@ -12,9 +12,29 @@ namespace Questionable.Controller.Steps.Interactions;
 
 internal static class Dive
 {
-    private static DiveDelegate? _diveFunc;
-    private static DiveDelegate DiveFunc => _diveFunc ??= Marshal.GetDelegateForFunctionPointer<DiveDelegate>(Svc.SigScanner.ScanText("48 89 5C 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B 1D ?? ?? ?? ?? 48 8D 54 24"));
-    public static unsafe void ExecuteDive() => DiveFunc(Control.Instance());
+    // API12 / 7.1: sig from HEAD (game 7.5) may not match. Lazy-init with try/catch so the
+    // type doesn't fail to load if the sig is absent — Dive task will throw at execute time instead.
+    private static DiveDelegate? DiveFunc = TryResolveDive();
+
+    private static DiveDelegate? TryResolveDive()
+    {
+        try
+        {
+            return Marshal.GetDelegateForFunctionPointer<DiveDelegate>(Svc.SigScanner.ScanText("48 89 5C 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B 1D ?? ?? ?? ?? 48 8D 54 24"));
+        }
+        catch
+        {
+            Svc.Log?.Warning("Dive sig not found on game 7.1; ExecuteDive will throw if invoked.");
+            return null;
+        }
+    }
+
+    public static unsafe void ExecuteDive()
+    {
+        if (DiveFunc is null)
+            throw new InvalidOperationException("Dive function not available on this game version.");
+        DiveFunc(Control.Instance());
+    }
     private static unsafe void Dismount() => ActionManager.Instance()->UseAction(ActionType.GeneralAction, 23);
     private unsafe delegate byte DiveDelegate(void* control);
 

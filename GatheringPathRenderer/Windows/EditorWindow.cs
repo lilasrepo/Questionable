@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
@@ -12,6 +12,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -122,7 +123,7 @@ internal sealed class EditorWindow : Window
         }
 
         _target ??= _objectTable
-            .Where(x => x.ObjectKind == ObjectKind.GatheringPoint && x.BaseId == location.Node.DataId)
+            .Where(x => x.ObjectKind == ObjectKind.GatheringPoint && x.DataId == location.Node.DataId)
             .Select(x => new
             {
                 Object = x,
@@ -150,7 +151,7 @@ internal sealed class EditorWindow : Window
             ImGui.Text(context.File.Name);
             ImGui.Unindent();
             ImGui.Text(
-                $"{_target.BaseId} +{node.Locations.Count - 1} / {location.InternalId.ToString()[..4]}");
+                $"{_target.DataId} +{node.Locations.Count - 1} / {location.InternalId.ToString()[..4]}");
             ImGui.Text(string.Create(CultureInfo.InvariantCulture, $"{location.Position:G}"));
 
             if (!_changes.TryGetValue(location.InternalId, out LocationOverride? locationOverride))
@@ -214,7 +215,7 @@ internal sealed class EditorWindow : Window
             ImGui.EndDisabled();
 
 
-            List<IGameObject> nodesInObjectTable = [.. _objectTable.Where(x => x.ObjectKind == ObjectKind.GatheringPoint && x.BaseId == _target.BaseId)];
+            List<IGameObject> nodesInObjectTable = [.. _objectTable.Where(x => x.ObjectKind == ObjectKind.GatheringPoint && x.DataId == _target.DataId)];
             List<IGameObject> missingLocations = [.. nodesInObjectTable.Where(x => !node.Locations.Any(y => Vector3.Distance(x.Position, y.Position) < 0.1f))];
             if (missingLocations.Count > 0)
             {
@@ -229,7 +230,7 @@ internal sealed class EditorWindow : Window
         }
         else if (_target != null)
         {
-            GatheringPoint? gatheringPoint = _dataManager.GetExcelSheet<GatheringPoint>().GetRowOrDefault(_target.BaseId);
+            GatheringPoint? gatheringPoint = _dataManager.GetExcelSheet<GatheringPoint>().GetRowOrDefault(_target.DataId);
             if (gatheringPoint == null)
                 return;
 
@@ -246,7 +247,7 @@ internal sealed class EditorWindow : Window
                     _plugin.Save(targetFile, root);
                 }
 
-                ImGui.BeginDisabled(root.Groups.Any(group => group.Nodes.Any(node => node.DataId == _target.BaseId)));
+                ImGui.BeginDisabled(root.Groups.Any(group => group.Nodes.Any(node => node.DataId == _target.DataId)));
                 ImGui.SameLine();
                 if (ImGui.Button("Add as new group"))
                 {
@@ -323,7 +324,7 @@ internal sealed class EditorWindow : Window
         List<string> seen = [];
         count = 0;
         Dictionary<uint, Tuple<string, string, bool, float, bool>> output = [];
-        foreach (GatheringPoint _point in gatheringPoints.OrderBy(x => x.PlaceName.Value.Name.ToMacroString()))
+        foreach (GatheringPoint _point in gatheringPoints.OrderBy(x => x.PlaceName.Value.Name.ToString()))
         {
             if (_point.GatheringPointBase.RowId >= 653 && _point.GatheringPointBase.RowId <= 680) continue; // obsolete skybuilders stuff
             bool alreadyAdded = false;
@@ -337,8 +338,8 @@ internal sealed class EditorWindow : Window
             count += 1;
             if (compact)
             {
-                if (seen.Contains(_point.PlaceName.Value.Name.ToMacroString())) continue;
-                seen.Add(_point.PlaceName.Value.Name.ToMacroString());
+                if (seen.Contains(_point.PlaceName.Value.Name.ToString())) continue;
+                seen.Add(_point.PlaceName.Value.Name.ToString());
             }
             char special = ' ';
             if (_dataManager.GetExcelSheet<GatheringPointTransient>().TryGetRow(_point.RowId, out GatheringPointTransient gatheringPointTransient) &&

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Questionable.Data;
 using Questionable.Model.Questing;
 using Questionable.Utils;
+using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Questionable.Controller.GameUi;
 
@@ -53,7 +54,7 @@ internal sealed class PointMenuHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandlePointMenu((AtkUnitBase*)args.Addon.Address);
+        HandlePointMenu((AtkUnitBase*)args.Addon);
     }
 
     /// <summary>

@@ -31,16 +31,18 @@ public abstract record ItemReward(ItemRewardDetails Item)
     public abstract EItemRewardType Type { get; }
     internal static ItemReward? CreateFromItem(Item item, ElementId elementId)
     {
-        if (item.ItemAction.Value is { } itemAction &&
-            itemAction.Action.Value is { } action)
+        // API12 ItemAction lacks .Action property (added in API15). Use the .Type column directly,
+        // which encodes the action category in game 7.1.
+        if (item.ItemAction.Value is { } itemAction)
         {
-            if (action.RowId is 1322)
+            ushort actionType = itemAction.Type;
+            if (actionType is 1322)
                 return new MountReward(new(item, elementId), item.ItemAction.Value.Data[0]);
 
-            if (action.RowId is 853)
+            if (actionType is 853)
                 return new MinionReward(new(item, elementId), item.ItemAction.Value.Data[0]);
 
-            if (action.RowId is 20086)
+            if (actionType is 20086)
                 return new FashionAccessoryReward(new(item, elementId), item.ItemAction.Value.Data[0]);
         }
         else if (item.AdditionalData.GetValueOrDefault<Orchestrion>() is { } orchestrionRoll)

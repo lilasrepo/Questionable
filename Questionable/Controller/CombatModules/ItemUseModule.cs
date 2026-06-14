@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
@@ -83,7 +83,7 @@ internal sealed class ItemUseModule(IServiceProvider serviceProvider, ICondition
             if (nextTarget.Position.DistanceTo_XZ(Svc.Objects[0]!.Position) > 3f)
             {
                 logger.LogInformation("Too far from target, moving closer");
-                movementController.NavigateTo(Model.EMovementType.Combat, nextTarget.BaseId, nextTarget.Position, new() { StopDistance = 3f });
+                movementController.NavigateTo(Model.EMovementType.Combat, nextTarget.DataId, nextTarget.Position, new(){ StopDistance = 3f });
                 _continueAt = DateTime.Now.AddSeconds(1);
                 return;
             }

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Game.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -71,7 +71,7 @@ internal abstract class ConfigComponent(IDalamudPluginInterface pluginInterface,
 
     protected static void DrawNotes(bool enabledByDefault, IEnumerable<string> notes)
     {
-        using ImRaii.ColorDisposable color = ImRaii.PushColor(ImGuiCol.TextDisabled, !enabledByDefault ? ImGuiColors.DalamudYellow : ImGuiColors.ParsedBlue);
+        using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.TextDisabled, !enabledByDefault ? ImGuiColors.DalamudYellow : ImGuiColors.ParsedBlue);
 
         ImGui.SameLine();
         using (ImRaii.PushFont(UiBuilder.IconFont))
@@ -85,7 +85,7 @@ internal abstract class ConfigComponent(IDalamudPluginInterface pluginInterface,
         if (!ImGui.IsItemHovered())
             return;
 
-        using ImRaii.TooltipDisposable _ = ImRaii.Tooltip();
+        using ImRaii.IEndObject _ = ImRaii.Tooltip();
 
         ImGui.TextColored(ImGuiColors.DalamudYellow,
             _L("While testing, the following issues have been found:"));

@@ -35,19 +35,22 @@ internal sealed class TextAdvanceIpc : IDisposable
     {
         _framework.Update -= OnUpdate;
         if (_isExternalControlActivated)
-            _disableExternalControl.InvokeFunc(_pluginName);
+            IpcInvoke.SafeAction(() => _disableExternalControl.InvokeFunc(_pluginName));
     }
 
     private void OnUpdate(IFramework framework)
     {
         bool hasActiveQuest = _questController.IsRunning ||
                               _questController.AutomationType != QuestController.EAutomationType.Manual;
+        // porting-note(api12/TC): TextAdvance has no TC port, so its IPC is never registered.
+        // Route every InvokeFunc through IpcInvoke.SafeFunc (silent overload) so IpcNotReadyError
+        // degrades to the fallback instead of throwing every frame out of IFramework.Update.
         if (_configuration.General.ConfigureTextAdvance && hasActiveQuest)
         {
-            if (!_isInExternalControl.InvokeFunc())
+            if (!IpcInvoke.SafeFunc(() => _isInExternalControl.InvokeFunc(), true))
             {
-                if (_enableExternalControl.InvokeFunc(
-                    _pluginName, CreateExternalTerritoryConfig(_configuration.General.DontSkipCutscenes)))
+                if (IpcInvoke.SafeFunc(() => _enableExternalControl.InvokeFunc(
+                        _pluginName, CreateExternalTerritoryConfig(_configuration.General.DontSkipCutscenes)), false))
                     _isExternalControlActivated = true;
             }
         }
@@ -55,7 +58,8 @@ internal sealed class TextAdvanceIpc : IDisposable
         {
             if (_isExternalControlActivated)
             {
-                if (_disableExternalControl.InvokeFunc(_pluginName) || !_isInExternalControl.InvokeFunc())
+                if (IpcInvoke.SafeFunc(() => _disableExternalControl.InvokeFunc(_pluginName), true) ||
+                    !IpcInvoke.SafeFunc(() => _isInExternalControl.InvokeFunc(), true))
                     _isExternalControlActivated = false;
             }
         }

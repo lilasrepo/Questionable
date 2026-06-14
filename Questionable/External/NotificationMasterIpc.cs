@@ -1,24 +1,14 @@
-﻿﻿using Dalamud.Plugin;
-using NotificationMasterAPI;
-
 namespace Questionable.External;
 
-internal sealed class NotificationMasterIpc(IDalamudPluginInterface pluginInterface, Configuration configuration)
+// B1: the NotificationMasterAPI NuGet (the IPC-client wrapper) is unavailable on the TC
+// net9/API12 feed. Out-of-game tray/taskbar notifications are stubbed out — Enabled
+// reports false (so the NotificationMaster UI controls stay disabled) and Notify is a
+// no-op. The in-game chat notification path in SendNotification is unaffected.
+internal sealed class NotificationMasterIpc
 {
-    private readonly NotificationMasterApi _api = new(pluginInterface);
-
-    public bool Enabled => _api.IsIPCReady();
+    public bool Enabled => false;
 
     public void Notify(string message)
     {
-        var config = configuration.Notifications;
-        if (!config.Enabled)
-            return;
-
-        if (config.ShowTrayMessage)
-            _api.DisplayTrayNotification("Questionable", message);
-
-        if (config.FlashTaskbar)
-            _api.FlashTaskbarIcon();
     }
 }

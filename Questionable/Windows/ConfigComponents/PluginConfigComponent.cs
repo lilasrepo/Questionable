@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -164,7 +164,7 @@ internal sealed class PluginConfigComponent
 
     public override void DrawTab()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Dependencies") + "###Plugins");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Dependencies") + "###Plugins");
         if (!tab)
             return;
 
@@ -350,7 +350,7 @@ internal sealed class PluginConfigComponent
             {
                 if (!allDetailsOk && plugin.ConfigCommand != null && plugin.ConfigCommand.StartsWith('/'))
                 {
-                    ImRaii.ColorDisposable? color = null;
+                    IDisposable? color = null;
                     if (!allDetailsOk)
                         color = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
                     if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Cog))
@@ -383,9 +383,12 @@ internal sealed class PluginConfigComponent
         string url = $"https://qstxiv.github.io/icons/{plugin.InternalName}.png";
         if (ThreadLoadImageHandler.TryGetTextureWrap(url, out IDalamudTextureWrap? logo))
         {
+            // API12 ImGui.ImageButton has 7 args (uv0/uv1 explicit) vs API15's 5-arg overload.
             return ImGui.ImageButton(
-                logo.Handle,
+                logo.ImGuiHandle,
                 new(size.Scale(), size.Scale()),
+                Vector2.Zero,
+                Vector2.One,
                 2,
                 isInstalled ? ImGuiColors.ParsedGreen : ImGuiColors.DalamudRed,
                 isActive ? Vector4.One : new(0.5f, 0.5f, 0.5f, 1f)

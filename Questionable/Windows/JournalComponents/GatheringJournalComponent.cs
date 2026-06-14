@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
@@ -83,6 +83,8 @@ internal sealed class GatheringJournalComponent
 
         _gatheringPointsByExpansion = dataManager.GetExcelSheet<GatheringPoint>()
             .Where(x => x.GatheringPointBase.RowId != 0)
+            // API12 / 7.1: skip refs whose target row is absent (game-7.5 GatheringPointBase rows).
+            .Where(x => x.GatheringPointBase.ValueNullable is not null)
             .Where(x => x.GatheringPointBase.RowId is < 653 or > 680) // exclude ishgard restoration phase 1
             .DistinctBy(x => x.GatheringPointBase.RowId)
             .Select(x => new
@@ -111,7 +113,10 @@ internal sealed class GatheringJournalComponent
                          _gatheringPointRegistry.TryGetGatheringPoint(x.Point.Id, out GatheringRoot? gatheringRoot))
                 {
                     // for some reason the game doesn't know where this gathering location is
-                    TerritoryType territoryType = territoryTypeSheet.GetRow(gatheringRoot.Steps.Last().TerritoryId);
+                    var territoryRowOpt = territoryTypeSheet.GetRowOrDefault(gatheringRoot.Steps.Last().TerritoryId);
+                    if (territoryRowOpt is null)
+                        return x.Point;
+                    var territoryType = territoryRowOpt.Value;
                     return x.Point with
                     {
                         Expansion = (EExpansionVersion)territoryType.ExVersion.RowId,
@@ -148,7 +153,7 @@ internal sealed class GatheringJournalComponent
 
     public void DrawGatheringItems()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Gathering Points"));
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Gathering Points"));
         if (!tab)
             return;
 
@@ -158,7 +163,7 @@ internal sealed class GatheringJournalComponent
 
         if (_filteredExpansions.Count > 0)
         {
-            using ImRaii.TableDisposable table = ImRaii.Table("GatheringPoints", 3, ImGuiTableFlags.NoSavedSettings);
+            using ImRaii.IEndObject table = ImRaii.Table("GatheringPoints", 3, ImGuiTableFlags.NoSavedSettings);
             if (!table)
                 return;
 

@@ -4,6 +4,7 @@ using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Text.Payloads;
 using Lumina.Text.ReadOnly;
+using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 namespace Questionable.Utils;
 
 internal static class AtkValueAdapter

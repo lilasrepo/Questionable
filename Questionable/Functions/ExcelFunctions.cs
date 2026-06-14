@@ -93,8 +93,8 @@ internal sealed class ExcelFunctions(IDataManager dataManager, ILogger<ExcelFunc
         }
         else if (excelSheet == "GimmickYesNo")
         {
-            GimmickYesNo? questRow = _dataManager.GetExcelSheet<GimmickYesNo>().GetRowOrDefault(rowId);
-            return questRow?.YesButton;
+            // B1: API12 GimmickYesNo lacks YesButton column (game-7.5).
+            return null;
         }
         else if (excelSheet == "Warp")
         {

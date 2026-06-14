@@ -92,9 +92,9 @@ internal sealed unsafe class AetheryteFunctions
     public bool IsFreeAetheryte(EAetheryteLocation aetheryteLocation)
     {
         PlayerState* playerState = PlayerState.Instance();
+        // B1: API12 PlayerState lacks FreeAetherytePSPlus (game-7.5 PS+ feature). Fall back to FreeAetheryteId only.
         return playerState != null &&
-               (playerState->FreeAetheryteId == (uint)aetheryteLocation ||
-                playerState->FreeAetherytePSPlus == (uint)aetheryteLocation);
+               playerState->FreeAetheryteId == (uint)aetheryteLocation;
     }
 
     public AetheryteRegistrationResult CanRegisterFreeOrFavoriteAetheryte(EAetheryteLocation aetheryteLocation)

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Diagnostics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Windowing;

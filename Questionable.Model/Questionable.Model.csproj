@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>14</LangVersion>
@@ -9,6 +9,10 @@
         <DebugType>portable</DebugType>
         <Platforms>x64</Platforms>
     </PropertyGroup>
+  <PropertyGroup>
+    <DalamudLibPath>$(MSBuildThisFileDirectory)..\..\..\TC_ok\_dalamud_api12\</DalamudLibPath>
+  </PropertyGroup>
+
 
     <ItemGroup>
         <PackageReference Include="System.Text.Json" Version="9.0.3" />

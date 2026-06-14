@@ -48,7 +48,7 @@ internal sealed class HousingSelectBlockHandler : IDisposable
             return;
 
         _logger.LogInformation("Confirming selected housing ward");
-        AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+        AtkUnitBase* addon = (AtkUnitBase*)args.Addon;
         addon->FireCallbackInt(0);
     }
 }

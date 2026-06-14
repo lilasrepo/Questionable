@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Game.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -29,7 +29,7 @@ internal sealed class QuestTooltipComponent
 
     public void Draw(IQuestInfo questInfo)
     {
-        using ImRaii.TooltipDisposable tooltip = ImRaii.Tooltip();
+        using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
         DrawInner(questInfo, true);
     }
 
@@ -190,7 +190,7 @@ internal sealed class QuestTooltipComponent
                 }
                 else
                 {
-                    using ImRaii.DisabledDisposable _ = ImRaii.Disabled();
+                    using ImRaii.IEndObject _ = ImRaii.Disabled();
                     uiUtils.ChecklistItem(_LF("Unknown Quest ({0})", q.QuestId), ImGuiColors.DalamudGrey,
                         FontAwesomeIcon.Question);
                 }
@@ -200,7 +200,7 @@ internal sealed class QuestTooltipComponent
         if (questInfo is QuestInfo actualQuestInfo)
         {
             if (actualQuestInfo.MoogleDeliveryLevel > 0)
-                ImGui.Text(_LF("Requires Carrier Level {0}", actualQuestInfo.MoogleDeliveryLevel));
+                ImGui.Text(_LF("Requires Carrier Level {}", actualQuestInfo.MoogleDeliveryLevel));
 
 
             if (counter == 0 && actualQuestInfo.QuestLocks.Count > 0)

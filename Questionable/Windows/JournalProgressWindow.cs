@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
@@ -73,7 +73,7 @@ internal sealed class JournalProgressWindow : LWindow, IDisposable
 
     public override void DrawContent()
     {
-        using ImRaii.TabBarDisposable tabBar = ImRaii.TabBar("Journal");
+        using ImRaii.IEndObject tabBar = ImRaii.TabBar("Journal");
         if (!tabBar)
             return;
 

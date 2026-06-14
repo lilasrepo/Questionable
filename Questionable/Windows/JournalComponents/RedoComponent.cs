@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -28,7 +28,7 @@ internal sealed class RedoComponent
 {
     public void DrawRedoChapters()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("New Game+"));
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("New Game+"));
         if (!tab)
             return;
 
@@ -47,7 +47,7 @@ internal sealed class RedoComponent
         redoUtil.TryGetActiveRedoChapter(out var questRedoChapter);
         ImGui.Text(questRedoChapter?.ChapterName.ToString() ?? ("None"));
 
-        using ImRaii.TableDisposable table = ImRaii.Table("RedoTable", 3, ImGuiTableFlags.NoSavedSettings);
+        using ImRaii.IEndObject table = ImRaii.Table("RedoTable", 3, ImGuiTableFlags.NoSavedSettings);
         if (!table)
             return;
 
@@ -76,7 +76,7 @@ internal sealed class RedoComponent
                     return quest;
                 return null;
             }).Where(q => q != null).ToArray();
-            ImRaii.ColorDisposable? disposable = null;
+            ImRaii.Color? disposable = null;
             if (checkQuests.Length > 0)
                 disposable = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
             bool open = ImGui.TreeNodeEx($"{chapter.RowId}", ImGuiTreeNodeFlags.SpanFullWidth, $"{categoryName}{chapterName}");
@@ -136,7 +136,7 @@ internal sealed class RedoComponent
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             ImGui.OpenPopup($"##QuestGroupPopup{note}");
 
-        using ImRaii.PopupDisposable popup = ImRaii.Popup($"##QuestGroupPopup{note}");
+        using ImRaii.IEndObject popup = ImRaii.Popup($"##QuestGroupPopup{note}");
         if (!popup)
             return;
 

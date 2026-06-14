@@ -16,7 +16,9 @@ using Questionable.Functions;
 using Questionable.Model;
 using Questionable.Model.Questing;
 using Questionable.Utils;
+using Dalamud.Game.ClientState.Objects;
 using Quest = Questionable.Model.Quest;
+using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Questionable.Controller.GameUi;
 
@@ -112,12 +114,12 @@ internal sealed class YesNoChoiceHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandleSelectYesno((AddonSelectYesno*)args.Addon.Address, checkAllSteps: false);
+        HandleSelectYesno((AddonSelectYesno*)args.Addon, checkAllSteps: false);
     }
 
     private unsafe void DifficultySelectYesNoPostSetup(AddonEvent type, AddonArgs args)
     {
-        HandleDifficultySelectYesNo((AtkUnitBase*)args.Addon.Address, checkAllSteps: false);
+        HandleDifficultySelectYesNo((AtkUnitBase*)args.Addon, checkAllSteps: false);
     }
 
     /// <summary>

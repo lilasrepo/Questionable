@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -26,7 +26,16 @@ using Quest = Questionable.Model.Quest;
 
 namespace Questionable.Windows.ConfigComponents;
 
-internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
+internal sealed class SinglePlayerDutyConfigComponent
+(
+    IDalamudPluginInterface pluginInterface,
+    Configuration configuration,
+    TerritoryData territoryData,
+    QuestRegistry questRegistry,
+    QuestData questData,
+    IDataManager dataManager,
+    ClassJobUtils classJobUtils,
+    ILogger<SinglePlayerDutyConfigComponent> logger) : ConfigComponent(pluginInterface, configuration)
 {
     private const string SinglePlayerDutyClipboardPrefix = "qst:single:";
 
@@ -43,12 +52,12 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private readonly string[] _retryDifficulties = [_L("Normal"), _L("Easy"), _L("Very Easy")];
 #endif
 
-    private readonly TerritoryData _territoryData;
-    private readonly QuestRegistry _questRegistry;
-    private readonly QuestData _questData;
-    private readonly IDataManager _dataManager;
-    private readonly ClassJobUtils _classJobUtils;
-    private readonly ILogger<SinglePlayerDutyConfigComponent> _logger;
+    private readonly TerritoryData _territoryData = territoryData;
+    private readonly QuestRegistry _questRegistry = questRegistry;
+    private readonly QuestData _questData = questData;
+    private readonly IDataManager _dataManager = dataManager;
+    private readonly ClassJobUtils _classJobUtils = classJobUtils;
+    private readonly ILogger<SinglePlayerDutyConfigComponent> _logger = logger;
 
     private ImmutableDictionary<EAetheryteLocation, List<SinglePlayerDutyInfo>> _startingCityBattles =
         ImmutableDictionary<EAetheryteLocation, List<SinglePlayerDutyInfo>>.Empty;
@@ -67,31 +76,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private ImmutableList<(string Label, List<SinglePlayerDutyInfo>)> _otherQuestBattles =
         ImmutableList<(string Label, List<SinglePlayerDutyInfo>)>.Empty;
 
-    public SinglePlayerDutyConfigComponent(
-        IDalamudPluginInterface pluginInterface,
-        Configuration configuration,
-        TerritoryData territoryData,
-        QuestRegistry questRegistry,
-        QuestData questData,
-        IDataManager dataManager,
-        ClassJobUtils classJobUtils,
-        ILogger<SinglePlayerDutyConfigComponent> logger) : base(pluginInterface, configuration)
-    {
-        _territoryData = territoryData;
-        _questRegistry = questRegistry;
-        _questData = questData;
-        _dataManager = dataManager;
-        _classJobUtils = classJobUtils;
-        _logger = logger;
-        _questRegistry.Reloaded += Reload;
-    }
-
-    public void Dispose()
-    {
-        _questRegistry.Reloaded -= Reload;
-    }
-
-    public void Reload(object? sender = null, EventArgs? e = null)
+    public void Reload()
     {
         List<ElementId> questsWithMultipleBattles = _territoryData.GetAllQuestsWithQuestBattles()
             .GroupBy(x => x.QuestId)
@@ -255,7 +240,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
 
     public override void DrawTab()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Quest Battles") + "###QuestBattles");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Quest Battles") + "###QuestBattles");
         if (!tab)
             return;
 
@@ -304,7 +289,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
             ImGui.Text(_L("You can override the settings for each individual quest battle:"));
 
 
-            using ImRaii.TabBarDisposable tabBar = ImRaii.TabBar("QuestionableConfigTabs");
+            using ImRaii.IEndObject tabBar = ImRaii.TabBar("QuestionableConfigTabs");
             if (tabBar)
             {
                 DrawMainScenarioConfigTable();
@@ -324,11 +309,11 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private void DrawMainScenarioConfigTable()
     {
         (int totalEnabled, int totalCount) = GetMainScenarioQuestCounts();
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_LF("Main Scenario Quests ({0}/{1})", totalEnabled, totalCount) + "###MSQ");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_LF("Main Scenario Quests ({0}/{1})",totalEnabled,totalCount) + "###MSQ");
         if (!tab)
             return;
 
-        using ImRaii.ChildDisposable child = BeginChildArea();
+        using ImRaii.IEndObject child = BeginChildArea();
         if (!child)
             return;
 
@@ -438,11 +423,11 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private void DrawJobQuestConfigTable()
     {
         (int totalEnabled, int totalCount) = GetJobQuestCounts();
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_LF("Class/Job Quests ({0}/{1})", totalEnabled, totalCount) + "###JobQuests");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_LF("Class/Job Quests ({0}/{1})",totalEnabled,totalCount) + "###JobQuests");
         if (!tab)
             return;
 
-        using ImRaii.ChildDisposable child = BeginChildArea();
+        using ImRaii.IEndObject child = BeginChildArea();
         if (!child)
             return;
 
@@ -496,11 +481,11 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private void DrawRoleQuestConfigTable()
     {
         (int totalEnabled, int totalCount) = GetRoleQuestCounts();
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_LF("Role Quests ({0}/{1})", totalEnabled, totalCount) + "###RoleQuests");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_LF("Role Quests ({0}/{1})",totalEnabled,totalCount) + "###RoleQuests");
         if (!tab)
             return;
 
-        using ImRaii.ChildDisposable child = BeginChildArea();
+        using ImRaii.IEndObject child = BeginChildArea();
         if (!child)
             return;
 
@@ -535,7 +520,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
         }
 
         (int otherEnabled, int otherTotal) = GetQuestBattleCounts(_otherRoleQuestBattles);
-        string otherRoleHeaderText = _LF("General Role Quests ({0}/{1})", otherEnabled, otherTotal);
+        string otherRoleHeaderText = _LF("General Role Quests ({0}/{1})",otherEnabled,otherTotal);
         string otherRoleKey = "Role_General";
         bool isOtherRoleHeaderOpen = Configuration.SinglePlayerDuties.HeaderStates.GetValueOrDefault(otherRoleKey, false);
         ImGui.SetNextItemOpen(isOtherRoleHeaderOpen, ImGuiCond.Always);
@@ -562,11 +547,11 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
     private void DrawOtherQuestConfigTable()
     {
         (int totalEnabled, int totalCount) = GetOtherQuestCounts();
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_LF("Other Quests ({0}/{1})", totalEnabled, totalCount) + "###MiscQuests");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_LF("Other Quests ({0}/{1})",totalEnabled,totalCount) + "###MiscQuests");
         if (!tab)
             return;
 
-        using ImRaii.ChildDisposable child = BeginChildArea();
+        using ImRaii.IEndObject child = BeginChildArea();
         if (!child)
             return;
 
@@ -600,7 +585,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
 
     private void DrawQuestTable(string label, IReadOnlyList<SinglePlayerDutyInfo> dutyInfos)
     {
-        using ImRaii.TableDisposable table = ImRaii.Table(label, 2, ImGuiTableFlags.SizingFixedFit);
+        using ImRaii.IEndObject table = ImRaii.Table(label, 2, ImGuiTableFlags.SizingFixedFit);
         if (table)
         {
             ImGui.TableSetupColumn(_L("Quest"), ImGuiTableColumnFlags.WidthStretch);
@@ -626,11 +611,11 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
 
                     if (ImGui.IsItemHovered() && Configuration.Advanced.AdditionalStatusInformation)
                     {
-                        using ImRaii.TooltipDisposable tooltip = ImRaii.Tooltip();
+                        using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
                         ImGui.TextUnformatted(dutyInfo.Name);
                         ImGui.Separator();
-                        ImGui.BulletText(_LF("TerritoryId: {0}", dutyInfo.TerritoryId));
-                        ImGui.BulletText(_LF("ContentFinderConditionId: {0}", dutyInfo.ContentFinderConditionId));
+                        ImGui.BulletText(_LF("TerritoryId: {0}",dutyInfo.TerritoryId));
+                        ImGui.BulletText(_LF("ContentFinderConditionId: {0}",dutyInfo.ContentFinderConditionId));
                     }
 
                     if (!dutyInfo.Enabled)
@@ -644,7 +629,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
 
                 if (ImGui.TableNextColumn())
                 {
-                    using ImRaii.IdDisposable _ = ImRaii.PushId($"##Duty{dutyInfo.ContentFinderConditionId}");
+                    using ImRaii.Id _ = ImRaii.PushId($"##Duty{dutyInfo.ContentFinderConditionId}");
                     using (ImRaii.Disabled(!dutyInfo.Enabled))
                     {
                         ImGui.SetNextItemWidth(200);
@@ -666,7 +651,7 @@ internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
         }
     }
 
-    private static ImRaii.ChildDisposable BeginChildArea() => ImRaii.Child("DutyConfiguration", new(675, 400), true);
+    private static ImRaii.IEndObject BeginChildArea() => ImRaii.Child("DutyConfiguration", new(675, 400), true);
 
     private void DrawEnableAllButton()
     {

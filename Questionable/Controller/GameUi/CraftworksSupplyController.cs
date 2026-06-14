@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Microsoft.Extensions.Logging;
 using Questionable.Utils;
+using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 namespace Questionable.Controller.GameUi;
 
 internal sealed class CraftworksSupplyController : IDisposable
@@ -45,7 +46,7 @@ internal sealed class CraftworksSupplyController : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+        AtkUnitBase* addon = (AtkUnitBase*)(IntPtr)args.Addon;
         InteractWithBankaCraftworksSupply(addon);
     }
 
@@ -77,11 +78,13 @@ internal sealed class CraftworksSupplyController : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        AddonContextIconMenu* addonContextIconMenu = (AddonContextIconMenu*)args.Addon.Address;
+        AddonContextIconMenu* addonContextIconMenu = (AddonContextIconMenu*)(IntPtr)args.Addon;
         if (!addonContextIconMenu->IsVisible)
             return;
 
-        ushort parentId = addonContextIconMenu->BlockedParentId;
+        // B1: API12 AddonContextIconMenu lacks BlockedParentId (game-7.5 field).
+        // Without it, we can't resolve the parent addon - skip auto pickup.
+        ushort parentId = 0;
         if (parentId == 0)
             return;
 

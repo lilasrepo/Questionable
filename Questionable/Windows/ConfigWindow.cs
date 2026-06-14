@@ -1,9 +1,8 @@
-﻿using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
 using Questionable.Windows.Common;
 using Questionable.Windows.ConfigComponents;
-using PunishLib.ImGuiMethods;
 using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Windows;
 
@@ -35,7 +34,7 @@ internal sealed class ConfigWindow
 
     public override void DrawContent()
     {
-        using ImRaii.TabBarDisposable tabBar = ImRaii.TabBar("QuestionableConfigTabs");
+        using ImRaii.IEndObject tabBar = ImRaii.TabBar("QuestionableConfigTabs");
         if (!tabBar)
             return;
 
@@ -46,11 +45,6 @@ internal sealed class ConfigWindow
         _stopConditionComponent.DrawTab();
         _notificationConfigComponent.DrawTab();
         _debugConfigComponent.DrawTab();
-        using (ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("About") + "###QuestionableConfigTabs"))
-        {
-            if (!tab)
-                return;
-            AboutTab.Draw("Questionable");
-        }
+        // B1: PunishLib About tab dropped (PunishLib.ImGuiMethods unavailable on the TC feed).
     }
 }

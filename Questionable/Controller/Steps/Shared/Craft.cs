@@ -122,6 +122,12 @@ internal static class Craft
             logger.LogInformation(
                 "Starting craft for item {ItemId} with recipe {RecipeId} for {RemainingItemCount} items (quality: {Quality}, owned: {OwnedCount})",
                 Task.ItemId, recipeId, remainingItemCount, _itemQuality, _startingItemCount);
+            // TC-only: prefer the sub-craft list path — it auto-queues the intermediate ingredient
+            // recipes so a quest item whose recipe needs sub-crafts can complete unattended.
+            // CraftItem (single recipe, no sub-crafts) is the fallback when Artisan lacks the IPC.
+            if (artisanIpc.CraftListWithSubcrafts((ushort)recipeId, remainingItemCount))
+                return true;
+
             if (!artisanIpc.CraftItem((ushort)recipeId, remainingItemCount))
                 throw new TaskException($"Failed to start Artisan craft for recipe {recipeId}");
 

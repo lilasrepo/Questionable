@@ -89,11 +89,14 @@ internal sealed class QuestData
     public QuestData(IDataManager dataManager, ClassJobUtils classJobUtils, IPluginLog? pluginLog = null)
     {
         _pluginLog = pluginLog;
+        // API12 / game 7.1: some Quest IDs (e.g. 70025 ThavnairSideQuests) are 7.5-only.
+        // Use GetRowOrDefault and fall back to 0 (no-override) when missing.
+        var questSheet = dataManager.GetExcelSheet<Quest>();
         JournalGenreOverrides journalGenreOverrides = new()
         {
-            ARelicRebornQuests = dataManager.GetExcelSheet<Quest>().GetRow(65742).JournalGenre.RowId,
-            RadzAtHanSideQuests = dataManager.GetExcelSheet<Quest>().GetRow(69805).JournalGenre.RowId,
-            ThavnairSideQuests = dataManager.GetExcelSheet<Quest>().GetRow(70025).JournalGenre.RowId
+            ARelicRebornQuests = questSheet.GetRowOrDefault(65742)?.JournalGenre.RowId ?? 0,
+            RadzAtHanSideQuests = questSheet.GetRowOrDefault(69805)?.JournalGenre.RowId ?? 0,
+            ThavnairSideQuests = questSheet.GetRowOrDefault(70025)?.JournalGenre.RowId ?? 0,
         };
 
         Dictionary<uint, uint> questChapters =

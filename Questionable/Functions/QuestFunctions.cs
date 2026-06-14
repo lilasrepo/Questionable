@@ -285,7 +285,8 @@ internal sealed unsafe class QuestFunctions
         if (scenarioTree->Data == null)
             return (QuestReference.NoQuest(MainScenarioQuestState.LoadingScreen), _L("Scenario Tree Data is null"));
 
-        QuestId currentQuest = new(scenarioTree->Data->MainScenarioQuestIds[0]);
+        // B1: API12 AgentScenarioTreeData has CurrentScenarioQuest (uint) instead of MainScenarioQuestIds[] (game-7.5 array of multiple).
+        QuestId currentQuest = new((ushort)scenarioTree->Data->CurrentScenarioQuest);
         string extraData = $"sq: {currentQuest}";
         if (currentQuest.Value == 0)
         {
@@ -740,7 +741,13 @@ internal sealed unsafe class QuestFunctions
 
     public bool IsQuestUnobtainable(QuestId questId, ElementId? extraCompletedQuest = null)
     {
-        QuestInfo questInfo = (QuestInfo)questData.GetQuestInfo(questId);
+        // porting-note(api12): seasonal/event quests defined for game 7.5 (e.g. "Make It Rain 2026",
+        // QuestId 5443) are absent from the TC game 7.1 Quest sheet, so a strict lookup throws
+        // KeyNotFoundException and crashes the QuestWindow draw. A quest missing from the loaded data
+        // is genuinely unobtainable on this client — treat it as such instead of throwing.
+        if (!questData.TryGetQuestInfo(questId, out IQuestInfo? questInfoBase))
+            return true;
+        QuestInfo questInfo = (QuestInfo)questInfoBase;
         if (questInfo.Expansion > (EExpansionVersion)PlayerState.Instance()->MaxExpansion)
             return true;
 

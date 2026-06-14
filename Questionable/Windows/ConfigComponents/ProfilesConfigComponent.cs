@@ -11,7 +11,7 @@ internal sealed class ProfilesConfigComponent
 
     public override void DrawTab()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Profiles") + "###Profiles");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Profiles") + "###Profiles");
         if (!tab)
             return;
     }

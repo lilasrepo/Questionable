@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
@@ -94,13 +94,12 @@ internal sealed class GeneralConfigComponent : ConfigComponent
 
     public override void DrawTab()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("General") + "###General");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("General") + "###General");
         if (!tab)
             return;
         Dictionary<string, string> languages = new(){
-            { "en",    _L("English") },
-            { "ja-jp", _L("Japanese") },
-            { "zh-cn", _L("Chinese (Simplified)") },
+            { "en",    _L("English") + " (100%)" },
+            { "ja-jp", _L("Japanese") + " (100%)" },
             { "af",    _L("Afrikaans") + " (WIP)" },
             { "ar",    _L("Arabic") + " (WIP)" },
             { "sq",    _L("Albanian") + " (WIP)" },
@@ -108,6 +107,7 @@ internal sealed class GeneralConfigComponent : ConfigComponent
             { "be",    _L("Belarusian") + " (WIP)" },
             { "bg",    _L("Bulgarian") + " (WIP)" },
             { "ca",    _L("Catalan") + " (WIP)" },
+            { "zh-cn", _L("Chinese (Simplified)") + " (WIP)" },
             { "zh-tw", _L("Chinese (Traditional)") + " (WIP)" },
             { "hr",    _L("Croatian") + " (WIP)" },
             { "cs",    _L("Czech") + " (WIP)" },
@@ -120,11 +120,8 @@ internal sealed class GeneralConfigComponent : ConfigComponent
         if (ImGuiComponentsLocal.DrawSearchableCombo(_L("Language"), languages.Keys.ToArray(), languages.Values.ToArray(),
             Configuration.General.Language, ref _langSearchString, ref language))
         {
-            var was = Configuration.General.Language;
             Configuration.General.Language = language;
             Save();
-            if (was != Configuration.General.Language)
-                DalamudInitializer.SetupI18N(Configuration.General.Language);
         }
 
         Configuration.ECombatModule combatModule = Configuration.General.CombatModule;

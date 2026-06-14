@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -47,9 +47,12 @@ internal sealed class DutyConfigComponent : ConfigComponent
             .Select(x => x.Content.ValueNullable)
             .Where(x => x != null)
             .Select(x => x!.Value)
+            // API12: skip CFC entries whose 7.5 TerritoryType row is missing from 7.1 data
+            // (RowRef.Value throws InvalidOperationException on broken refs; ValueNullable returns null).
+            .Where(x => x.TerritoryType.ValueNullable is not null)
             .Select(x => new
             {
-                Expansion = (EExpansionVersion)x.TerritoryType.Value.ExVersion.RowId,
+                Expansion = (EExpansionVersion)x.TerritoryType.ValueNullable!.Value.ExVersion.RowId,
                 CfcId = x.RowId,
                 Name = territoryData.GetContentFinderCondition(x.RowId)?.Name ?? _L("?"),
                 TerritoryId = x.TerritoryType.RowId,
@@ -66,7 +69,7 @@ internal sealed class DutyConfigComponent : ConfigComponent
 
     public override void DrawTab()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Duties") + "###Duties");
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Duties") + "###Duties");
         if (!tab)
             return;
 
@@ -127,7 +130,7 @@ internal sealed class DutyConfigComponent : ConfigComponent
 
     private void DrawConfigTable(bool runInstancedContentWithAutoDuty)
     {
-        using ImRaii.ChildDisposable child = ImRaii.Child("DutyConfiguration", new(650, 400), true);
+        using ImRaii.IEndObject child = ImRaii.Child("DutyConfiguration", new(650, 400), true);
         if (!child)
             return;
 
@@ -153,7 +156,7 @@ internal sealed class DutyConfigComponent : ConfigComponent
                     Save();
                 }
 
-                using ImRaii.TableDisposable table = ImRaii.Table($"Duties{expansion}", 2, ImGuiTableFlags.SizingFixedFit);
+                using ImRaii.IEndObject table = ImRaii.Table($"Duties{expansion}", 2, ImGuiTableFlags.SizingFixedFit);
                 if (table)
                 {
                     ImGui.TableSetupColumn(_L("Name"), ImGuiTableColumnFlags.WidthStretch);
@@ -183,7 +186,7 @@ internal sealed class DutyConfigComponent : ConfigComponent
                                     if (ImGui.IsItemHovered() &&
                                         Configuration.Advanced.AdditionalStatusInformation)
                                     {
-                                        using ImRaii.TooltipDisposable tooltip = ImRaii.Tooltip();
+                                        using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
                                         ImGui.TextUnformatted(name);
                                         ImGui.Separator();
                                         ImGui.BulletText(_LF("TerritoryId: {0}", territoryId));
@@ -201,7 +204,7 @@ internal sealed class DutyConfigComponent : ConfigComponent
 
                                 if (ImGui.TableNextColumn())
                                 {
-                                    using ImRaii.IdDisposable _ = ImRaii.PushId($"##Dungeon{cfcId}");
+                                    using ImRaii.Id _ = ImRaii.PushId($"##Dungeon{cfcId}");
                                     ImGui.SetNextItemWidth(200);
                                     if (ImGui.Combo(string.Empty, ref value, labels, labels.Length))
                                     {

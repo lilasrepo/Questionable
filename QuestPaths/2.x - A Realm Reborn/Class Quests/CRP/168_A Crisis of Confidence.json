@@ -47,7 +47,10 @@
       "Steps": [
         {
           "InteractionType": "Craft",
-          "TerritoryId": 132
+          "TerritoryId": 132,
+          "ItemId": 5371,
+          "ItemCount": 1,
+          "ItemQuality": "HQ"
         },
         {
           "DataId": 1000153,

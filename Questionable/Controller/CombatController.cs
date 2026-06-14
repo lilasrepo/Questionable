@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -7,6 +7,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -359,14 +360,14 @@ internal sealed class CombatController : IDisposable
                 if ((!expectQuestMarker || gameObjectStruct->NamePlateIconId != 0 || _currentFight.Data.SpawnType == EEnemySpawnType.FateEnemies) &&
                     _currentFight.Data.KillEnemyDataIds.Contains(GameFunctions.GetBaseID(battleNpc)))
                 {
-                    if (_currentFight.Data.SpawnType == EEnemySpawnType.FateEnemies && !PlayerState.Instance()->IsLevelSynced)
+                    if (_currentFight.Data.SpawnType == EEnemySpawnType.FateEnemies && PlayerState.Instance()->IsLevelSynced == 0)
                         _chatFunctions.ExecuteCommand("/lsync");
                     return (90, "KED");
                 }
             }
 
             // enemies that we have aggro on
-            if (battleNpc.BattleNpcKind is BattleNpcSubKind.BNpcPart or BattleNpcSubKind.Combatant)
+            if (battleNpc.BattleNpcKind is BattleNpcSubKind.BattleNpcPart or BattleNpcSubKind.Enemy)
             {
                 // npc that starts a fate or does turn-ins; not sure why they're marked as hostile
                 if (gameObjectStruct->NamePlateIconId is 60093 or 60732)
@@ -519,7 +520,7 @@ internal sealed class CombatController : IDisposable
         _wasInCombat = false;
     }
 
-    private void TerritoryChanged(uint territoryId) => Stop(_L("TerritoryChanged"));
+    private void TerritoryChanged(ushort territoryId) => Stop(_L("TerritoryChanged"));
 
     private sealed class CurrentFight
     {

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -320,7 +321,9 @@ internal sealed class CommandHandler : IDisposable
                     List<string> taxiStands = [];
                     ExcelSheet<ChocoboTaxiStand> taxiStandNames = _dataManager.GetExcelSheet<ChocoboTaxiStand>();
                     UIState* uiState = UIState.Instance();
-                    for (byte i = 0; i < uiState->UnlockedChocoboTaxiStands.Length * 8; ++i)
+                    // B1: API12 UIState lacks UnlockedChocoboTaxiStands (game-7.5 field).
+                    // Use a conservative iteration upper bound covering known taxi stand IDs.
+                    for (byte i = 0; i < 64; ++i)
                     {
                         if (!(uiState->IsChocoboTaxiStandUnlocked(i)) && taxiStandNames.HasRow(i + 0x120000u))
                         {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -35,7 +35,7 @@ internal sealed class CreditsController : IDisposable
     private unsafe void CreditScrollPostSetup(AddonEvent type, AddonArgs args)
     {
         _logger.LogInformation("Closing Credits sequence");
-        AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+        AtkUnitBase* addon = (AtkUnitBase*)(IntPtr)args.Addon;
         addon->FireCallbackInt(-2);
     }
 
@@ -45,14 +45,14 @@ internal sealed class CreditsController : IDisposable
     private unsafe void CreditPostSetup(AddonEvent type, AddonArgs args)
     {
         _logger.LogInformation("Closing Credits sequence");
-        AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+        AtkUnitBase* addon = (AtkUnitBase*)(IntPtr)args.Addon;
         addon->FireCallbackInt(-2);
     }
 
     private unsafe void CreditPlayerPostSetup(AddonEvent type, AddonArgs args)
     {
         _logger.LogInformation("Closing CreditPlayer");
-        AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+        AtkUnitBase* addon = (AtkUnitBase*)(IntPtr)args.Addon;
         addon->Close(true);
     }
 }

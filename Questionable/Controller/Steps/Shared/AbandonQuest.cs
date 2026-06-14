@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using ECommons.Throttlers;
@@ -30,7 +30,6 @@ internal static class AbandonQuest
         QuestController questController,
         ILogger<AbandonQuestExecutor> logger) : TaskExecutor<Task>
     {
-        private uint attempts;
         protected override bool Start()
         {
             // Safety check: ensure player is logged in
@@ -75,17 +74,11 @@ internal static class AbandonQuest
 
         public void AbandonQuestAction()
         {
-            if (attempts >= 5)
-            {
-                configuration.Advanced.AbandonQuestBeforeCompletion = false;
-                configuration.Save();
-                throw new TaskException("AbandonQuest failed, disabling config option and stopping automatic questing.");
-            }
             logger.LogInformation($"Firing AbandonQuest for {Task.Quest?.Id.Value}");
-            GameMain.ExecuteCommand((int)GameCommand.AbandonQuest, (int)Task.Quest!.Id.Value);
-            attempts += 1;
-            if (configuration.Advanced.RemoveFromPriorityWhenAbandoned)
-                questController.PriorityManager.Remove(Task.Quest.Id);
+            // B1: API12 FFXIVClientStructs lacks GameMain.ExecuteCommand (game-7.5).
+            // TODO(api12): port to a sig-scanned delegate.
+            logger.LogWarning("AbandonQuest is unavailable on API12 (game 7.1).");
+            questController.PriorityManager.Remove(Task.Quest!.Id);
         }
 
         public override bool ShouldInterruptOnDamage() => false;

@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using Dalamud.Bindings.ImGui;
+using System.Linq;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
@@ -49,7 +49,7 @@ internal sealed class ARealmRebornComponent
         if (complete || !hover)
             return;
 
-        using ImRaii.TooltipDisposable tooltip = ImRaii.Tooltip();
+        using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
         foreach (ushort instanceId in RequiredPrimalInstances)
         {
             (Vector4 color, FontAwesomeIcon icon) = UiUtils.GetInstanceStyle(instanceId);
@@ -65,7 +65,7 @@ internal sealed class ARealmRebornComponent
         if (complete || !hover)
             return;
 
-        using ImRaii.TooltipDisposable tooltip = ImRaii.Tooltip();
+        using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
         foreach (QuestId questId in QuestData.CrystalTowerQuests)
         {
             (Vector4 color, FontAwesomeIcon icon, string _) = _uiUtils.GetQuestStyle(questId);

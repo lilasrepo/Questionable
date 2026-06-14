@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -7,6 +8,7 @@ using ECommons.Automation;
 using Lumina.Excel.Sheets;
 using Microsoft.Extensions.Logging;
 using Questionable.Model.Questing;
+using Dalamud.Game.ClientState.Objects;
 
 namespace Questionable.Functions;
 
@@ -19,8 +21,8 @@ internal sealed class ChatFunctions
 {
     private readonly ReadOnlyDictionary<EEmote, string> _emoteCommands = dataManager.GetExcelSheet<Emote>()
         .Where(x => x.RowId > 0)
-        .Where(x => x.TextCommand.IsValid)
-        .Select(x => (x.RowId, Command: x.TextCommand.Value.Command.ToString()))
+        .Where(x => x.TextCommand.ValueNullable is not null)
+        .Select(x => (x.RowId, Command: x.TextCommand.ValueNullable!.Value.Command.ToString()))
         .Where(x => !string.IsNullOrEmpty(x.Command) && x.Command.StartsWith('/'))
         .ToDictionary(x => (EEmote)x.RowId, x => x.Command)
         .AsReadOnly();

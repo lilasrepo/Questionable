@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
@@ -36,7 +36,7 @@ internal sealed class QuestJournalUtils
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             ImGui.OpenPopup($"##QuestPopup{questInfo.QuestId}");
 
-        using ImRaii.PopupDisposable popup = ImRaii.Popup($"##QuestPopup{questInfo.QuestId}");
+        using ImRaii.IEndObject popup = ImRaii.Popup($"##QuestPopup{questInfo.QuestId}");
         if (!popup)
             return;
 
@@ -96,7 +96,7 @@ internal sealed class QuestJournalUtils
         if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Filter, ("Filter")))
             ImGui.OpenPopup("##QuestFilters");
 
-        using ImRaii.PopupDisposable popup = ImRaii.Popup("##QuestFilters");
+        using ImRaii.IEndObject popup = ImRaii.Popup("##QuestFilters");
         if (!popup)
             return;
 
@@ -112,7 +112,7 @@ internal sealed class QuestJournalUtils
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             ImGui.OpenPopup($"##QuestGroupPopup{note}");
 
-        using ImRaii.PopupDisposable popup = ImRaii.Popup($"##QuestGroupPopup{note}");
+        using ImRaii.IEndObject popup = ImRaii.Popup($"##QuestGroupPopup{note}");
         if (!popup)
             return;
 

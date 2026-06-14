@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -35,7 +35,7 @@ internal sealed class AlliedSocietyJournalComponent
     uint _incomplete;
     public void DrawAlliedSocietyQuests()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Allied Societies"));
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Allied Societies"));
         if (!tab)
             return;
         bool addPending = false;
@@ -186,13 +186,13 @@ internal sealed class AlliedSocietyJournalComponent
             {
                 lastChecked = $"({quest.Root.LastChecked.Date})";
                 if (quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays > 30)
-                    color = ImGuiColors.DalamudOrange;
+                    color = ImGuiColors.DalamudRed;
             }
             else
-                color = ImGuiColors.ParsedOrange;
+                color = ImGuiColors.DPSRed;
             if (quest.Root.Disabled && (quest.Root.Comment ?? "").Contains("FATE"))
             {
-                color = ImGuiColors.DalamudRed;
+                color = ImGuiColors.DalamudOrange;
                 fate = true;
             }
         }
@@ -204,7 +204,7 @@ internal sealed class AlliedSocietyJournalComponent
             checklistItem = $"[+{questInfo.SocietyRepValue}] " + checklistItem;
         if (uiUtils.ChecklistItem(checklistItem, color, icon))
             questTooltipComponent.Draw(questInfo);
-        if (addPending && (color.Equals(ImGuiColors.DalamudOrange) || color.Equals(ImGuiColors.ParsedOrange)))
+        if (addPending && (color.Equals(ImGuiColors.DalamudRed) || color.Equals(ImGuiColors.DPSRed)))
             questController.PriorityManager.Add(questInfo.QuestId);
 
         questJournalUtils.ShowContextMenu(questInfo, quest, nameof(AlliedSocietyJournalComponent));

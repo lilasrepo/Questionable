@@ -15,6 +15,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -78,7 +79,7 @@ public sealed class RendererPlugin : IDalamudPlugin
         _pluginInterface.GetIpcSubscriber<object>("Questionable.ReloadData")
             .Subscribe(Reload);
 
-        PctService.Initialize(pluginInterface);
+        PictoService.Initialize(pluginInterface);
         LoadGatheringLocationsFromDirectory();
 
         _pluginInterface.UiBuilder.Draw += Draw;
@@ -125,7 +126,7 @@ public sealed class RendererPlugin : IDalamudPlugin
         _pluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
         _windowSystem.RemoveAllWindows();
 
-        PctService.Dispose();
+        PictoService.Dispose();
 
         _pluginInterface.GetIpcSubscriber<object>("Questionable.ReloadData")
             .Unsubscribe(Reload);
@@ -280,7 +281,7 @@ public sealed class RendererPlugin : IDalamudPlugin
         if (!_currentClassJob.IsDol())
             return;
 
-        using PctDrawList? drawList = PctService.Draw();
+        using PctDrawList? drawList = PictoService.Draw();
         if (drawList == null)
             return;
 
@@ -342,7 +343,7 @@ public sealed class RendererPlugin : IDalamudPlugin
                             locationOverride?.MaximumDistance ?? x.CalculateMaximumDistance(),
                             minimumAngle, maximumAngle, color | 0xFF000000);
 
-                        drawList.AddText(x.Position, isUnsaved ? 0xFFFF0000 : 0xFFFFFFFF, $"{location.Root.Groups.IndexOf(group)} // {node.DataId} / {node.Locations.IndexOf(x)} || {minimumAngle}, {maximumAngle}");
+                        drawList.AddText(x.Position, isUnsaved ? 0xFFFF0000 : 0xFFFFFFFF, $"{location.Root.Groups.IndexOf(group)} // {node.DataId} / {node.Locations.IndexOf(x)} || {minimumAngle}, {maximumAngle}", 1.0f);
 #if false
                         var a = GatheringMath.CalculateLandingLocation(x, 0, 0);
                         var b = GatheringMath.CalculateLandingLocation(x, 1, 1);

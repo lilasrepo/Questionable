@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -49,7 +49,7 @@ internal sealed class QuestJournalComponent
 
     public void DrawQuests()
     {
-        using ImRaii.TabItemDisposable tab = ImRaii.TabItem(_L("Quests"));
+        using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Quests"));
         if (!tab)
             return;
 
@@ -61,7 +61,10 @@ internal sealed class QuestJournalComponent
             ImGui.BulletText(
                 _L("Not all quests can be completed even if they're listed as available, e.g. starting city quest chains."));
             ImGui.BulletText(_L("The text in the Supported column indicates the last time a quest path was reported to work perfectly."));
-            ImGui.TextColoredWrapped(ImGuiColors.DalamudYellow, _L("Quests can be added to Priority Quests, either individually or by group, with the right click menu."));
+            // API12 lacks ImGui.TextColoredWrapped — bridge via PushStyleColor + TextWrapped.
+            ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
+            ImGui.TextWrapped(_L("Quests can be added to Priority Quests, either individually or by group, with the right click menu."));
+            ImGui.PopStyleColor();
 
             ImGui.Spacing();
             ImGui.Separator();
@@ -77,7 +80,7 @@ internal sealed class QuestJournalComponent
 
         if (_filteredSections.Count > 0)
         {
-            using ImRaii.TableDisposable table = ImRaii.Table("Quests", 3, ImGuiTableFlags.NoSavedSettings);
+            using ImRaii.IEndObject table = ImRaii.Table("Quests", 3, ImGuiTableFlags.NoSavedSettings);
             if (!table)
                 return;
 

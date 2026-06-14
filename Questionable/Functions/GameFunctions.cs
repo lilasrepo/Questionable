@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
@@ -96,8 +97,8 @@ internal sealed unsafe partial class GameFunctions
     {
         foreach (IGameObject gameObject in objectTable)
         {
-            if (gameObject.ObjectKind is ObjectKind.Pc or ObjectKind.Companion or ObjectKind.Mount
-                or ObjectKind.Retainer or ObjectKind.HousingEventObject)
+            if (gameObject.ObjectKind is ObjectKind.Player or ObjectKind.Companion or ObjectKind.MountType
+                or ObjectKind.Retainer or ObjectKind.Housing)
                 continue;
 
             // multiple objects in the object table can share the same data id for gathering points; only one of those
@@ -176,13 +177,13 @@ internal sealed unsafe partial class GameFunctions
         if (gameObject != null)
         {
             Vector3 position = gameObject.Position;
-            return ActionManager.Instance()->UseActionLocation(ActionType.EventItem, itemId, location: &position);
+            return ActionManager.Instance()->UseActionLocation(ActionType.KeyItem /* TODO(api12): API12 has no EventItem; KeyItem is closest match */, itemId, location: &position);
         }
 
         return false;
     }
 
-    public bool UseItemOnPosition(Vector3 position, uint itemId) => ActionManager.Instance()->UseActionLocation(ActionType.EventItem, itemId, location: &position);
+    public bool UseItemOnPosition(Vector3 position, uint itemId) => ActionManager.Instance()->UseActionLocation(ActionType.KeyItem /* TODO(api12): API12 has no EventItem; KeyItem is closest match */, itemId, location: &position);
 
     public bool UseAction(EAction action)
     {
@@ -511,7 +512,7 @@ internal sealed unsafe partial class GameFunctions
         if (obj == null)
             return 0;
 
-        return obj.BaseId;
+        return obj.DataId;
     }
 
     /// <summary>
@@ -529,13 +530,8 @@ internal sealed unsafe partial class GameFunctions
             return null;
         }
 
+        // B1: API12 UIState lacks UnlockLinksBitArray (game-7.5 field). Return empty list.
         List<uint> unlockedUnlockLinks = [];
-        foreach ((int index, bool isUnlocked) in uiState->UnlockLinksBitArray)
-        {
-            if (isUnlocked)
-                unlockedUnlockLinks.Add((uint)index);
-        }
-
         logger.LogInformation("Unlocked unlock links: {UnlockedUnlockLinks}", string.Join(", ", unlockedUnlockLinks));
         return unlockedUnlockLinks;
     }

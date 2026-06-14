@@ -28,7 +28,7 @@ internal sealed class PartyWatchDog : IDisposable
 
     public void Dispose() => _clientState.TerritoryChanged -= TerritoryChanged;
 
-    private unsafe void TerritoryChanged(uint newTerritoryId)
+    private unsafe void TerritoryChanged(ushort newTerritoryId)
     {
         TerritoryIntendedUseEnum intendedUse = (TerritoryIntendedUseEnum)GameMain.Instance()->CurrentTerritoryIntendedUseId;
         switch (intendedUse)

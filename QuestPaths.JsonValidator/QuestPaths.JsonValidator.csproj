@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -10,6 +10,10 @@
         <IsTestProject>true</IsTestProject>
         <NoWarn>NU1510</NoWarn>
     </PropertyGroup>
+  <PropertyGroup>
+    <DalamudLibPath>$(MSBuildThisFileDirectory)..\..\..\TC_ok\_dalamud_api12\</DalamudLibPath>
+  </PropertyGroup>
+
 
     <ItemGroup>
         <PackageReference Include="JsonSchema.Net" Version="7.4.0" />
@@ -26,7 +30,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Questionable.Model\Questionable.Model.csproj" />
-        <ProjectReference Include="..\QuestPaths\QuestPaths.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -16,8 +16,9 @@ internal sealed unsafe class CameraFunctions : IDisposable
     private readonly IObjectTable _objectTable;
 
     private readonly bool IgnoreUserInput = true; // if true - override even if user tries to change camera orientation, otherwise override only if user does nothing
-    [Signature("48 8B C4 53 48 81 EC ?? ?? ?? ?? 44 0F 29 50 ??")]
-    private readonly Hook<RMICameraDelegate> _rmiCameraHook = null!;
+    // sig walk-back to game 7.1 (matches AutoDuty/OverrideCamera.cs + ffxiv_navmesh/Movement/OverrideCamera.cs).
+    [Signature("40 53 48 83 EC 70 44 0F 29 44 24 ?? 48 8B D9")]
+    private Hook<RMICameraDelegate> _rmiCameraHook = null!;
     private float DesiredAltitude;
     private float DesiredAzimuth;
 
@@ -74,18 +75,11 @@ internal sealed unsafe class CameraFunctions : IDisposable
 
     private void RMICameraDetour(Camera* self, int inputMode, float speedH, float speedV)
     {
+        // B1: API12 Camera struct lacks DirH/DirV/InputDeltaH/InputDeltaV (game-7.5 fields).
+        // Pass through to original; auto-camera-face during quests is disabled.
+        // TODO(api12): port via raw struct offsets if camera-face becomes critical.
         _rmiCameraHook.Original(self, inputMode, speedH, speedV);
-        if (IgnoreUserInput || inputMode == 0) // let user override...
-        {
-            float dt = Framework.Instance()->FrameDeltaTime;
-            float deltaH = Normalized(DesiredAzimuth - self->DirH);
-            float deltaV = Normalized(DesiredAltitude - self->DirV);
-            float maxH = Deg2Rad(180);
-            float maxV = Deg2Rad(180);
-            self->InputDeltaH = Math.Clamp(deltaH, -maxH, maxH);
-            self->InputDeltaV = Math.Clamp(deltaV, -maxV, maxV);
-            Enabled = false;
-        }
+        Enabled = false;
     }
 
     private delegate void RMICameraDelegate(Camera* self, int inputMode, float speedH, float speedV);

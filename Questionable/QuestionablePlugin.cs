@@ -1,12 +1,14 @@
-﻿using System;
+using System;
 using System.IO;
-using Dalamud.Extensions.MicrosoftLogging;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using Dalamud.Game;
+using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Questionable.Logging;
 using Questionable.Controller;
 using Questionable.Controller.CombatModules;
 using Questionable.Controller.GameUi;
@@ -31,11 +33,8 @@ using Questionable.Windows.ConfigComponents;
 using Questionable.Windows.JournalComponents;
 using Questionable.Windows.QuestComponents;
 using Questionable.Windows.Utils;
-using WrathCombo.API;
-using PunishLib;
 using static Questionable.Utils.LocalizeShortcut;
 using Action = Questionable.Controller.Steps.Interactions.Action;
-using WrathError = WrathCombo.API.WrathIPCWrapper.ErrorType;
 
 namespace Questionable;
 
@@ -64,11 +63,8 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         ArgumentNullException.ThrowIfNull(pluginInterface);
         ArgumentNullException.ThrowIfNull(chatGui);
         ECommonsMain.Init(pluginInterface, this, Module.DalamudReflector);
-        WrathIPCWrapper.Init(pluginInterface, WrathError.IPCNotReady | WrathError.Unexpected);
-        PunishLibMain.Init(pluginInterface, "Questionable", new AboutPlugin() {
-            Developer = "alydev",
-            Sponsor = "https://github.com/sponsors/alydevs"
-        });
+        // B1: WrathIPCWrapper.Init removed (WrathCombo.API NuGet is API15-only).
+        // B1: PunishLibMain.Init removed (PunishLib About-tab dep dropped on TC).
 
         try
         {
@@ -324,7 +320,7 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<ICombatModule, Mount147Module>();
         serviceCollection.AddSingleton<ICombatModule, ItemUseModule>();
         serviceCollection.AddSingleton<ICombatModule, BossModModule>();
-        serviceCollection.AddSingleton<ICombatModule, WrathComboModule>();
+        // B1: WrathComboModule removed — WrathCombo.API NuGet is API15-only.
         serviceCollection.AddSingleton<ICombatModule, RotationSolverRebornModule>();
     }
 

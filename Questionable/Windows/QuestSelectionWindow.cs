@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -139,7 +139,7 @@ internal sealed class QuestSelectionWindow : LWindow
         if (_offeredQuests.Count != 0)
             ImGui.Checkbox(_L("Only show quests currently offered"), ref _onlyAvailableQuests);
 
-        using ImRaii.TableDisposable table = ImRaii.Table("QuestSelection", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY);
+        using ImRaii.IEndObject table = ImRaii.Table("QuestSelection", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.ScrollY);
         if (!table)
             return;
 
@@ -209,7 +209,7 @@ internal sealed class QuestSelectionWindow : LWindow
             {
                 // If button is added/removed, update buttonCount
 
-                using ImRaii.IdDisposable id = ImRaii.PushId(questId);
+                using ImRaii.Id id = ImRaii.PushId(questId);
 
                 bool priority = ImGuiComponentsLocal.IconButton(FontAwesomeIcon.ExclamationCircle);
                 if (ImGui.IsItemHovered())

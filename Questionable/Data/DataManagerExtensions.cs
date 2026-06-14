@@ -93,9 +93,7 @@ public readonly struct QuestDialogueText(ExcelPage page, uint offset, uint row) 
     public ReadOnlySeString Key => page.ReadString(offset, offset);
     public ReadOnlySeString Value => page.ReadString(offset + 4, offset);
 
-    ExcelPage IExcelRow<QuestDialogueText>.ExcelPage => page;
-
-    uint IExcelRow<QuestDialogueText>.RowOffset => offset;
+    // API12 IExcelRow<T> doesn't have ExcelPage/RowOffset properties (added in API15).
 
     static QuestDialogueText IExcelRow<QuestDialogueText>.Create(ExcelPage page, uint offset, uint row) => new(page, offset, row);
 }

@@ -40,7 +40,9 @@ internal sealed class TerritoryData
 
         _dutyTerritories = dataManager.GetExcelSheet<TerritoryType>()
             .Where(x => x.RowId > 0 && x.ContentFinderCondition.RowId != 0)
-            .ToImmutableDictionary(x => x.RowId, x => x.ContentFinderCondition.Value.ContentType.RowId);
+            // API12 / 7.1: skip rows whose CFC ref doesn't resolve in 7.1 data.
+            .Where(x => x.ContentFinderCondition.ValueNullable is not null)
+            .ToImmutableDictionary(x => x.RowId, x => x.ContentFinderCondition.ValueNullable!.Value.ContentType.RowId);
 
         _instanceNames = dataManager.GetExcelSheet<ContentFinderCondition>()
             .Where(x => x.RowId > 0 && x.Content.RowId != 0 && x.ContentLinkType == 1 && x.ContentType.RowId != 6)
@@ -56,6 +58,9 @@ internal sealed class TerritoryData
             .SelectMany(GetQuestBattles)
             .Select(x => (x.QuestId, x.Index,
                 CfcId: LookupContentFinderConditionForQuestBattle(dataManager, x.QuestBattleId)))
+            // Filter out unresolved (CfcId == 0) entries; B1 fallback for API12-missing SoloDuty
+            // returns 0 and would fail _contentFinderConditions[0] downstream.
+            .Where(x => x.CfcId != 0 && _contentFinderConditions.ContainsKey(x.CfcId))
             .ToImmutableDictionary(x => (x.QuestId, x.Index), x => x.CfcId);
     }
 
@@ -123,7 +128,8 @@ internal sealed class TerritoryData
         if (questBattleId >= 5000)
             return dataManager.GetExcelSheet<InstanceContent>().GetRow(questBattleId).ContentFinderCondition.RowId;
         else
-            return dataManager.GetExcelSheet<QuestBattleResident>().GetRow(questBattleId).SoloDuty.RowId;
+            // B1: API12 QuestBattleResident lacks SoloDuty column (game-7.5). Cannot resolve CFC; return 0.
+            return 0;
     }
 
     public sealed record ContentFinderConditionData

@@ -10,6 +10,10 @@
         <Platforms>x64</Platforms>
         <MSBuildWarningsAsMessages>MSB3243</MSBuildWarningsAsMessages>
     </PropertyGroup>
+  <PropertyGroup>
+    <DalamudLibPath>$(MSBuildThisFileDirectory)..\..\..\TC_ok\_dalamud_api12\</DalamudLibPath>
+  </PropertyGroup>
+
 
     <ItemGroup>
         <PackageReference Include="coverlet.collector" Version="6.0.4">

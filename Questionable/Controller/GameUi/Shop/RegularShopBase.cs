@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Game.NativeWrapper;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -51,7 +50,7 @@ public class RegularShopBase
             return;
         }
 
-        _parentWindow.UpdateShopStock((AtkUnitBase*)args.Addon.Address);
+        _parentWindow.UpdateShopStock((AtkUnitBase*)(IntPtr)args.Addon);
         PostUpdateShopStock();
         if (ItemForSale != null)
             _parentWindow.IsOpen = true;
@@ -73,17 +72,17 @@ public class RegularShopBase
             return;
         }
 
-        _parentWindow.UpdateShopStock((AtkUnitBase*)args.Addon.Address);
+        _parentWindow.UpdateShopStock((AtkUnitBase*)(IntPtr)args.Addon);
         PostUpdateShopStock();
         if (ItemForSale != null)
         {
-            AtkUnitBase* addon = (AtkUnitBase*)args.Addon.Address;
+            AtkUnitBase* addon = (AtkUnitBase*)(IntPtr)args.Addon;
             short x = 0, y = 0;
             addon->GetPosition(&x, &y);
 
-            ushort width = 0, height = 0;
+            short width = 0, height = 0;
             addon->GetSize(&width, &height, true);
-            x += (short)width;
+            x += width;
 
             if (_parentWindow.Position is { } position && ((short)position.X != x || (short)position.Y != y))
                 _parentWindow.Position = new Vector2(x, y);
@@ -150,10 +149,10 @@ public class RegularShopBase
         {
             if (PurchaseState.NextStep <= DateTime.Now)
             {
-                AtkUnitBasePtr addonShopPtr = _gameGui.GetAddonByName(_addonName);
-                if (!addonShopPtr.IsNull)
+                IntPtr addonShopPtr = _gameGui.GetAddonByName(_addonName, 1);
+                if (addonShopPtr != IntPtr.Zero)
                 {
-                    AtkUnitBase* addonShop = (AtkUnitBase*)addonShopPtr.Address;
+                    AtkUnitBase* addonShop = (AtkUnitBase*)addonShopPtr;
                     int buyNow = Math.Min(PurchaseState.ItemsLeftToBuy, maxStackSize);
                     _pluginLog.Information($"Buying {buyNow}x {ItemForSale.ItemName}");
 

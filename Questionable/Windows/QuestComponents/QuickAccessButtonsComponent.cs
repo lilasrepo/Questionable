@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
@@ -171,7 +171,7 @@ internal sealed class QuickAccessButtonsComponent
             return;
 
         int partsToRender = errorCount == 0 || infoCount == 0 ? 1 : 2;
-        using ImRaii.IdDisposable id = ImRaii.PushId("validationissues");
+        using ImRaii.Id id = ImRaii.PushId("validationissues");
 
         FontAwesomeIcon icon1 = FontAwesomeIcon.ExclamationTriangle;
         FontAwesomeIcon icon2 = FontAwesomeIcon.InfoCircle;

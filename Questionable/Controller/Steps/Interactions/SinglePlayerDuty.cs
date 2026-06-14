@@ -5,6 +5,7 @@ using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;

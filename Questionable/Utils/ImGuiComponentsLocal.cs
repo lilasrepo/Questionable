@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
