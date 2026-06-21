@@ -4,3 +4,15 @@ Questionable/Logging/DalamudLoggerExtensions.cs
 # Auto-promoted by plugin_update on 2026-06-01
 Questionable/Questionable.csproj
 Questionable/Questionable.json
+# Pinned 2026-06-19: recurring TC-critical fixes reverted by the 3-way merge every refresh.
+# - LocalizeShortcut.cs: i18n B-passthrough shim (_L/_LF identity); upstream uses I18N.DotNet
+#   (unavailable on TC net9 feed). + no-op Initialize() for the upstream startup call.
+# - QuestInfo.cs: CRASH fix — TempQuest (custom 7.5-layout sheet) column-hash-mismatches on game 7.1
+#   and crashes plugin LOAD; use stock ExcelQuest. + ItemAction.Action (API15-only) -> AdditionalData
+#   GetValueOrDefault<TripleTriadCard>. Carries upstream's TripleTriadCardRewards property too.
+# - ItemReward.cs: ItemAction lacks .Action on API12; Mount/Minion/Fashion via .Type, Orchestrion/
+#   TripleTriad via AdditionalData typed lookup.
+# See FORWARD_PORT_REFERENCE.md Questionable entry.
+Questionable/Utils/LocalizeShortcut.cs
+Questionable/Model/QuestInfo.cs
+Questionable/Model/ItemReward.cs

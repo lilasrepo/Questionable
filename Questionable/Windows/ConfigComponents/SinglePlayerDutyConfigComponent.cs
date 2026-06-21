@@ -26,16 +26,7 @@ using Quest = Questionable.Model.Quest;
 
 namespace Questionable.Windows.ConfigComponents;
 
-internal sealed class SinglePlayerDutyConfigComponent
-(
-    IDalamudPluginInterface pluginInterface,
-    Configuration configuration,
-    TerritoryData territoryData,
-    QuestRegistry questRegistry,
-    QuestData questData,
-    IDataManager dataManager,
-    ClassJobUtils classJobUtils,
-    ILogger<SinglePlayerDutyConfigComponent> logger) : ConfigComponent(pluginInterface, configuration)
+internal sealed class SinglePlayerDutyConfigComponent : ConfigComponent
 {
     private const string SinglePlayerDutyClipboardPrefix = "qst:single:";
 
@@ -52,12 +43,12 @@ internal sealed class SinglePlayerDutyConfigComponent
     private readonly string[] _retryDifficulties = [_L("Normal"), _L("Easy"), _L("Very Easy")];
 #endif
 
-    private readonly TerritoryData _territoryData = territoryData;
-    private readonly QuestRegistry _questRegistry = questRegistry;
-    private readonly QuestData _questData = questData;
-    private readonly IDataManager _dataManager = dataManager;
-    private readonly ClassJobUtils _classJobUtils = classJobUtils;
-    private readonly ILogger<SinglePlayerDutyConfigComponent> _logger = logger;
+    private readonly TerritoryData _territoryData;
+    private readonly QuestRegistry _questRegistry;
+    private readonly QuestData _questData;
+    private readonly IDataManager _dataManager;
+    private readonly ClassJobUtils _classJobUtils;
+    private readonly ILogger<SinglePlayerDutyConfigComponent> _logger;
 
     private ImmutableDictionary<EAetheryteLocation, List<SinglePlayerDutyInfo>> _startingCityBattles =
         ImmutableDictionary<EAetheryteLocation, List<SinglePlayerDutyInfo>>.Empty;
@@ -76,7 +67,31 @@ internal sealed class SinglePlayerDutyConfigComponent
     private ImmutableList<(string Label, List<SinglePlayerDutyInfo>)> _otherQuestBattles =
         ImmutableList<(string Label, List<SinglePlayerDutyInfo>)>.Empty;
 
-    public void Reload()
+    public SinglePlayerDutyConfigComponent(
+        IDalamudPluginInterface pluginInterface,
+        Configuration configuration,
+        TerritoryData territoryData,
+        QuestRegistry questRegistry,
+        QuestData questData,
+        IDataManager dataManager,
+        ClassJobUtils classJobUtils,
+        ILogger<SinglePlayerDutyConfigComponent> logger) : base(pluginInterface, configuration)
+    {
+        _territoryData = territoryData;
+        _questRegistry = questRegistry;
+        _questData = questData;
+        _dataManager = dataManager;
+        _classJobUtils = classJobUtils;
+        _logger = logger;
+        _questRegistry.Reloaded += Reload;
+    }
+
+    public void Dispose()
+    {
+        _questRegistry.Reloaded -= Reload;
+    }
+
+    public void Reload(object? sender = null, EventArgs? e = null)
     {
         List<ElementId> questsWithMultipleBattles = _territoryData.GetAllQuestsWithQuestBattles()
             .GroupBy(x => x.QuestId)
@@ -520,7 +535,7 @@ internal sealed class SinglePlayerDutyConfigComponent
         }
 
         (int otherEnabled, int otherTotal) = GetQuestBattleCounts(_otherRoleQuestBattles);
-        string otherRoleHeaderText = _LF("General Role Quests ({0}/{1})",otherEnabled,otherTotal);
+        string otherRoleHeaderText = _LF("General Role Quests ({0}/{1})", otherEnabled, otherTotal);
         string otherRoleKey = "Role_General";
         bool isOtherRoleHeaderOpen = Configuration.SinglePlayerDuties.HeaderStates.GetValueOrDefault(otherRoleKey, false);
         ImGui.SetNextItemOpen(isOtherRoleHeaderOpen, ImGuiCond.Always);
@@ -614,8 +629,8 @@ internal sealed class SinglePlayerDutyConfigComponent
                         using ImRaii.IEndObject tooltip = ImRaii.Tooltip();
                         ImGui.TextUnformatted(dutyInfo.Name);
                         ImGui.Separator();
-                        ImGui.BulletText(_LF("TerritoryId: {0}",dutyInfo.TerritoryId));
-                        ImGui.BulletText(_LF("ContentFinderConditionId: {0}",dutyInfo.ContentFinderConditionId));
+                        ImGui.BulletText(_LF("TerritoryId: {0}", dutyInfo.TerritoryId));
+                        ImGui.BulletText(_LF("ContentFinderConditionId: {0}", dutyInfo.ContentFinderConditionId));
                     }
 
                     if (!dutyInfo.Enabled)

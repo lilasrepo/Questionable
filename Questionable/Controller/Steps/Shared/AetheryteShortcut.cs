@@ -6,6 +6,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using Microsoft.Extensions.Logging;
 using Questionable.Controller.Steps.Common;
+using Questionable.Controller.Steps.Interactions;
 using Questionable.Controller.Steps.Movement;
 using Questionable.Controller.Utils;
 using Questionable.Data;
@@ -18,25 +19,129 @@ namespace Questionable.Controller.Steps.Shared;
 
 internal static class AetheryteShortcut
 {
-    internal sealed class Factory(AetheryteData aetheryteData, TerritoryData territoryData, IClientState clientState)
+    public static HashSet<uint> Territories = [212, 351, 128, 131, 133, 419];
+    internal sealed class Factory(AetheryteData aetheryteData, IClientState clientState, IObjectTable objectTable)
         : ITaskFactory
     {
         public IEnumerable<ITask> CreateAllTasks(Quest quest, QuestSequence sequence, QuestStep step)
         {
             if (step.AetheryteShortcut == null)
-                yield break;
-
-            yield return new Task(step, quest.Id, step.AetheryteShortcut.Value,
-                aetheryteData.TerritoryIds[step.AetheryteShortcut.Value]);
-            yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(1));
-
-            if (MoveAwayFromAetheryteExecutor.AppliesTo(step.AetheryteShortcut.Value) &&
-                step.AethernetShortcut?.From != step.AetheryteShortcut.Value)
             {
-                yield return new WaitCondition.Task(
-                    () => clientState.TerritoryType == aetheryteData.TerritoryIds[step.AetheryteShortcut.Value],
-                    $"Wait(territory: {territoryData.GetNameAndId(aetheryteData.TerritoryIds[step.AetheryteShortcut.Value])})");
-                yield return new MoveAwayFromAetheryte(step.AetheryteShortcut.Value);
+                bool matchesCondition(EExtraSkipCondition condition, Vector3 position) =>
+                    ExtraConditionUtils.MatchesExtraCondition(condition, position, step.TerritoryId);
+                if (step.TerritoryId == 212) // Waking Sands
+                {
+                    bool inTerritory = clientState.TerritoryType == 212;
+                    if (!inTerritory)
+                    {
+                        yield return new Task(step, quest.Id, EAetheryteLocation.WesternThanalanHorizon, 140);
+                        yield return new MoveTask(
+                            TerritoryId: 140,
+                            Destination: new(-492.96475f, 20.999884f, -380.82272f),
+                            Fly: true);
+                        yield return new MoveTask(
+                            TerritoryId: 140,
+                            Destination: new(-480.9181f, 18.00103f, -386.862f));
+                        yield return new Interact.Task(2001711, quest, EInteractionType.Interact);
+                    }
+                    // if target position is in the solar, and we're either not in the territory yet or are not in the solar, interact to enter
+                    if (step.Position != null && matchesCondition(EExtraSkipCondition.WakingSandsSolar, step.Position.Value) &&
+                        (!inTerritory || objectTable[0] != null && !matchesCondition(EExtraSkipCondition.WakingSandsSolar, objectTable[0]!.Position)))
+                    {
+                        yield return new MoveTask(
+                            TerritoryId: 212,
+                            Destination: new(23.23944f, 2.090454f, -0.015319824f));
+                        yield return new Interact.Task(2001715, quest, EInteractionType.Interact);
+                    }
+                    // if target is *not* in Solar and we are there, interact to leave
+                    if (step.Position != null && !matchesCondition(EExtraSkipCondition.WakingSandsSolar, step.Position.Value) &&
+                        inTerritory && objectTable[0] != null && matchesCondition(EExtraSkipCondition.WakingSandsSolar, objectTable[0]!.Position))
+                    {
+                        yield return new MoveTask(
+                            TerritoryId: 212,
+                            Destination: new(25.497803f, 2.090454f, -0.015319824f));
+                        yield return new Interact.Task(2001717, quest, EInteractionType.Interact);
+                    }
+                }
+                else if (step.TerritoryId == 351) // Rising Stones
+                {
+                    bool inTerritory = clientState.TerritoryType == 351;
+                    if (!inTerritory)
+                    {
+                        yield return new Task(step, quest.Id, EAetheryteLocation.MorDhona, 156);
+                        yield return new MoveTask(
+                            TerritoryId: 156,
+                            Destination: new(21.133728f, 22.323914f, -631.281f),
+                            Mount: true);
+                        yield return new Interact.Task(2002881, quest, EInteractionType.Interact);
+                    }
+                    // if target is in Solar and we are not currently there, interact to get there
+                    if (step.Position != null && matchesCondition(EExtraSkipCondition.RisingStonesSolar, step.Position.Value) &&
+                        (!inTerritory || objectTable[0] != null && !matchesCondition(EExtraSkipCondition.RisingStonesSolar, objectTable[0]!.Position)))
+                    {
+                        yield return new MoveTask(
+                         TerritoryId: 351,
+                         Destination: new(-0.015319824f, -1.0223389f, -26.779602f));
+                        yield return new Interact.Task(2002878, quest, EInteractionType.Interact);
+                    }
+                    // if target is *not* in Solar and we are there, interact to leave
+                    if (step.Position != null && !matchesCondition(EExtraSkipCondition.RisingStonesSolar, step.Position.Value) &&
+                        inTerritory && objectTable[0] != null && matchesCondition(EExtraSkipCondition.RisingStonesSolar, objectTable[0]!.Position))
+                    {
+                        yield return new MoveTask(
+                            TerritoryId: 351,
+                            Destination: new(-0.015319824f, -1.0223389f, -29.251587f));
+                        yield return new Interact.Task(2002880, quest, EInteractionType.Interact);
+                    }
+                }
+                else if (step.TerritoryId == 128 &&
+                    !sequence.Steps.Any(step => step.TerritoryId == 129) &&
+                    clientState.TerritoryType != 128 &&
+                    step.AethernetShortcut == null) // Limsa
+                {
+                    yield return new Task(step, quest.Id, EAetheryteLocation.Limsa, 129);
+                    yield return new AethernetShortcut.Task(EAetheryteLocation.Limsa, EAetheryteLocation.LimsaAftcastle);
+                }
+                else if (step.TerritoryId == 133 &&
+                    !sequence.Steps.Any(step => step.TerritoryId == 132) &&
+                    clientState.TerritoryType != 133 &&
+                    step.AethernetShortcut == null) // Gridania
+                {
+                    yield return new Task(step, quest.Id, EAetheryteLocation.Gridania, 132);
+                    yield return new AethernetShortcut.Task(EAetheryteLocation.Gridania, EAetheryteLocation.GridaniaAmphitheatre);
+                }
+                else if (step.TerritoryId == 131 &&
+                    !sequence.Steps.Any(step => step.TerritoryId == 130) &&
+                    clientState.TerritoryType != 131 &&
+                    step.AethernetShortcut == null) // Uldah
+                {
+                    yield return new Task(step, quest.Id, EAetheryteLocation.Uldah, 130);
+                    yield return new AethernetShortcut.Task(EAetheryteLocation.Uldah, EAetheryteLocation.UldahGoldsmith);
+                }
+                else if (step.TerritoryId == 419 &&
+                    !sequence.Steps.Any(step => step.TerritoryId == 418) &&
+                    clientState.TerritoryType != 419 &&
+                    step.AethernetShortcut == null) // Ishgard
+                {
+                    yield return new Task(step, quest.Id, EAetheryteLocation.Ishgard, 418);
+                    yield return new AethernetShortcut.Task(EAetheryteLocation.Ishgard, EAetheryteLocation.IshgardLastVigil);
+                }
+                yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(1));
+            }
+            else
+            {
+                yield return new Task(step, quest.Id, step.AetheryteShortcut.Value,
+                    aetheryteData.TerritoryIds[step.AetheryteShortcut.Value]);
+                yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(1));
+
+                if (MoveAwayFromAetheryteExecutor.AppliesTo(step.AetheryteShortcut.Value) &&
+                    step.AethernetShortcut?.From != step.AetheryteShortcut.Value)
+                {
+                    yield return new WaitCondition.Task(
+                        () => clientState.TerritoryType == aetheryteData.TerritoryIds[step.AetheryteShortcut.Value],
+                        $"Wait(territory: {TerritoryData.GetNameAndId(aetheryteData.TerritoryIds[step.AetheryteShortcut.Value])})");
+                    yield return new MoveAwayFromAetheryte(step.AetheryteShortcut.Value);
+                }
             }
         }
     }
@@ -67,7 +172,6 @@ internal static class AetheryteShortcut
         IChatGui chatGui,
         ICondition condition,
         AetheryteData aetheryteData,
-        TerritoryData territoryData,
         ExtraConditionUtils extraConditionUtils,
         QuestRegistry questRegistry) : TaskExecutor<Task>
     {
@@ -112,9 +216,9 @@ internal static class AetheryteShortcut
                     {
                         logger.LogInformation("Skipping aetheryte shortcut, null result. step:{Step}, nearest:{Nearest}",
                             Task.Step.AetheryteShortcut, nearest);
-                        if (Task.Step.AethernetShortcut is not { })
+                        if (Task.Step.AethernetShortcut is not { } && clientState.TerritoryType != Task.Step.TerritoryId)
                             chatGui.PrintError("Questionable could not automatically find an unlocked aetheryte destination in " +
-                                $"{territoryData.GetNameAndId(Task.Step.TerritoryId)}, waiting until you manually navigate there.",
+                                $"{TerritoryData.GetNameAndId(Task.Step.TerritoryId)}, waiting until you manually navigate there.",
                                 CommandHandler.MessageTag, CommandHandler.TagColor);
                         return true;
                     }
@@ -163,7 +267,7 @@ internal static class AetheryteShortcut
                     if (skipConditions.QuestsAccepted.Count > 0 &&
                         skipConditions.QuestsAccepted.All(questFunctions.IsQuestAccepted))
                     {
-                        logger.LogInformation("Skipping aetheryte, all prequisite quests are accepted");
+                        logger.LogInformation("Skipping aetheryte shortcut, all prequisite quests are accepted");
                         return true;
                     }
 
@@ -194,7 +298,6 @@ internal static class AetheryteShortcut
                         }
                     }
 
-
                     if (skipConditions.NearPosition is { } nearPosition &&
                         clientState.TerritoryType == nearPosition.TerritoryId)
                     {
@@ -220,7 +323,7 @@ internal static class AetheryteShortcut
                     if (skipConditions.ExtraCondition != null && skipConditions.ExtraCondition != EExtraSkipCondition.None &&
                         extraConditionUtils.MatchesExtraCondition(skipConditions.ExtraCondition.Value))
                     {
-                        logger.LogInformation("Skipping step, extra condition {} matches", skipConditions.ExtraCondition);
+                        logger.LogInformation("Skipping aetheryte shortcut, extra condition {ExtraCondition} matches", skipConditions.ExtraCondition);
                         return true;
                     }
                 }
@@ -264,7 +367,7 @@ internal static class AetheryteShortcut
                         float distance_aetheryte_to_target = aetheryteData.CalculateDistance(Task.Step.Position.Value, territoryType, Task.targetAetheryte);
                         if (distance_target < Task.Step.CalculateActualStopDistance())
                         {
-                            logger.LogInformation("Skipping aetheryte teleport, we're near the target");
+                            logger.LogInformation("Skipping aetheryte shortcut, we're near the target");
                             return true;
                         }
 
@@ -295,7 +398,7 @@ internal static class AetheryteShortcut
                                 Task.Step.Position.Value.DistanceTo_XZ(Task.targetAetheryte.Position(aetheryteData)));
                             if (distance_target < (teleportTimeDistance + distance_aetheryte_to_target))
                             {
-                                logger.LogInformation("Skipping aetheryte teleport, it's a shorter distance to walk there");
+                                logger.LogInformation("Skipping aetheryte shortcut, it's a shorter distance to walk there");
                                 return true;
                             }
                         }

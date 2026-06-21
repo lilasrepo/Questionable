@@ -10,6 +10,7 @@ using Dalamud.Plugin.Services;
 using Microsoft.Extensions.Logging;
 using Questionable.Controller;
 using Questionable.Model;
+using static Questionable.Utils.LocalizeShortcut;
 
 namespace Questionable.PathData;
 
@@ -53,9 +54,10 @@ internal sealed class PathDataUpdater : IDisposable
     }
 
     public DateTime StatusLastChanged { get; private set; } = DateTime.Now;
-    private string _status = "Idle";
+    private string _status = _L("Idle");
     /// <summary>Human-readable status for the config UI.</summary>
-    public string Status {
+    public string Status
+    {
         get
         {
             return _status;
@@ -127,9 +129,19 @@ internal sealed class PathDataUpdater : IDisposable
         _configuration.PathData.BundlePluginVersion = null;
     }
 
-    private async Task CheckForUpdatesAsync()
+    private async Task RetryAfterDelay(int retryCount = 1)
     {
-        Status = "Checking for path updates…";
+        await Task.Delay(1000 * retryCount).ConfigureAwait(false);
+        _configuration.PathData.InstalledDataVersion = 0;
+        _configuration.PathData.BundlePluginVersion = null;
+        Save();
+        retryCount *= 2;
+        await CheckForUpdatesAsync(retryCount).ConfigureAwait(false);
+    }
+
+    private async Task CheckForUpdatesAsync(int retryCount = 1)
+    {
+        Status = _L("Checking for path updates…");
         using HttpClient http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
         string manifestUrl = $"{RepositoryUrl}/releases/download/paths-{_channel}/manifest-{_channel}.json";
@@ -142,14 +154,17 @@ internal sealed class PathDataUpdater : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogWarning(e, "Failed to fetch the path data manifest");
-            Status = "Update check failed";
+            _logger.LogWarning(e, "Failed to fetch the path data manifest; retrying");
+            Status = _L("Update check failed") + $" ({retryCount})";
+            await RetryAfterDelay(retryCount).ConfigureAwait(false);
             return;
         }
 
         if (manifest == null)
         {
-            Status = "Update check failed";
+            _logger.LogWarning("manifest was null; retrying");
+            Status = _L("Update check failed") + $" ({retryCount})";
+            await RetryAfterDelay(retryCount).ConfigureAwait(false);
             return;
         }
 
@@ -159,7 +174,7 @@ internal sealed class PathDataUpdater : IDisposable
         if (!manifest.IsCompatibleWith(PathDataFormat.CurrentVersion))
         {
             _logger.LogInformation("Newer path data is available but requires a newer plugin version");
-            Status = "Update the plugin for newer path data";
+            Status = _L("Update the plugin for newer path data");
             WaitingForPluginUpdate = true;
             Save();
             return;
@@ -167,20 +182,28 @@ internal sealed class PathDataUpdater : IDisposable
 
         if (manifest.DataVersion <= _configuration.PathData.InstalledDataVersion)
         {
-            Status = "Path data is up to date";
-            Save();
-            return;
+            if (_questRegistry.Count >= 500)
+            {
+                Status = _L("Path data is up to date");
+                Save();
+                return;
+            }
+            else
+            {
+                Status = _L("Path data from previous run missing, downloading path data...");
+                Save();
+            }
         }
 
         if (string.IsNullOrEmpty(manifest.BundleUrl))
         {
-            _logger.LogWarning("Path data manifest has no bundle URL");
-            Status = "Update check failed";
-            Save();
+            _logger.LogWarning("Path data manifest has no bundle URL; retrying");
+            Status = _L("Update check failed") + $" ({retryCount})";
+            await RetryAfterDelay(retryCount).ConfigureAwait(false);
             return;
         }
 
-        Status = "Downloading path data…";
+        Status = _L("Downloading path data…");
         byte[] zipBytes;
         try
         {
@@ -188,9 +211,9 @@ internal sealed class PathDataUpdater : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogWarning(e, "Failed to download the path data bundle");
-            Status = "Download failed";
-            Save();
+            _logger.LogWarning(e, "Failed to download the path data bundle; retrying");
+            Status = _L("Download failed") + $" ({retryCount})";
+            await RetryAfterDelay(retryCount).ConfigureAwait(false);
             return;
         }
 
@@ -199,9 +222,9 @@ internal sealed class PathDataUpdater : IDisposable
             string actualSha = Convert.ToHexString(SHA256.HashData(zipBytes));
             if (!string.Equals(actualSha, manifest.BundleSha256, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogError("Path data bundle checksum mismatch; discarding the download");
-                Status = "Download failed (checksum mismatch)";
-                Save();
+                _logger.LogWarning("Path data bundle checksum mismatch; retrying");
+                Status = _L("Download failed (checksum mismatch)") + $" ({retryCount})";
+                await RetryAfterDelay(retryCount).ConfigureAwait(false);
                 return;
             }
         }
@@ -217,9 +240,9 @@ internal sealed class PathDataUpdater : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to install the downloaded path data bundle");
-            Status = "Install failed";
-            Save();
+            _logger.LogWarning(e, "Failed to install the downloaded path data bundle; retrying");
+            Status = _L("Install failed") + $" ({retryCount})";
+            await RetryAfterDelay(retryCount).ConfigureAwait(false);
             return;
         }
 
@@ -228,7 +251,7 @@ internal sealed class PathDataUpdater : IDisposable
         Save();
 
         _logger.LogInformation("Installed path data bundle (data version {DataVersion})", manifest.DataVersion);
-        Status = $"Updated to data version {manifest.DataVersion}";
+        Status = _LF("Updated to data version {0}", manifest.DataVersion);
 
         await _framework.RunOnFrameworkThread(_questRegistry.Reload).ConfigureAwait(false);
     }

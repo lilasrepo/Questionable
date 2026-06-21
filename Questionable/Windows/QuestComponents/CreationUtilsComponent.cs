@@ -38,7 +38,6 @@ internal sealed class CreationUtilsComponent
     QuestRegistry questRegistry,
     QuestFunctions questFunctions,
     CameraFunctions cameraFunctions,
-    TerritoryData territoryData,
     QuestData questData,
     QuestSelectionWindow questSelectionWindow,
     PriorityWindow priorityWindow,
@@ -57,7 +56,7 @@ internal sealed class CreationUtilsComponent
         if (objectTable[0] == null)
             return;
 
-        string territoryName = territoryData.GetNameAndId(clientState.TerritoryType);
+        string territoryName = TerritoryData.GetNameAndId(clientState.TerritoryType);
         ImGui.Text(territoryName);
 
         if (gameFunctions.IsFlyingUnlockedInCurrentZone())
@@ -281,7 +280,7 @@ internal sealed class CreationUtilsComponent
             bool showZoneQuests = ImGuiComponentsLocal.IconButton(FontAwesomeIcon.MapMarkerAlt);
             if (showZoneQuests)
             {
-                logger.LogDebug($"Opening questselectionwindow for current zone {territoryData.GetNameAndId(clientState.TerritoryType)}");
+                logger.LogDebug($"Opening questselectionwindow for current zone {TerritoryData.GetNameAndId(clientState.TerritoryType)}");
                 questSelectionWindow.OpenForCurrentZone();
             }
             if (ImGui.IsItemHovered())
@@ -356,12 +355,9 @@ internal sealed class CreationUtilsComponent
                 };
                 ImGui.SetClipboardText($$"""
                                          "DataId": {{GameFunctions.GetBaseID(target)}},
-                                                   "Position": {
-                                                     "X": {{target.Position.X.ToString(CultureInfo.InvariantCulture)}},
-                                                     "Y": {{target.Position.Y.ToString(CultureInfo.InvariantCulture)}},
-                                                     "Z": {{target.Position.Z.ToString(CultureInfo.InvariantCulture)}}
-                                                   },
+                                                   "Position": {{target.Position.ToJsonString()}},
                                                    "TerritoryId": {{clientState.TerritoryType}},
+
                                          """ + (GameFunctions.IsFlyingUnlocked(clientState.TerritoryType) ? 
                                        $$"""
                                                    "InteractionType": "{{interactionType}}",
@@ -409,6 +405,7 @@ internal sealed class CreationUtilsComponent
                                                  "Z": {{objectTable[0]!.Position.Z.ToString(CultureInfo.InvariantCulture)}}
                                                },
                                                "TerritoryId": {{clientState.TerritoryType}},
+
                                      """ + (GameFunctions.IsFlyingUnlocked(clientState.TerritoryType) ? 
                                    $$"""
                                                "InteractionType": "",

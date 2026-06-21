@@ -5,6 +5,7 @@
     "Questionable/Controller/GameUi/InteractionUiController.cs": 1,
     "Questionable/External/StylistIpc.cs": 1,
     "Questionable/Functions/CameraFunctions.cs": 1,
+    "Questionable/Model/ItemReward.cs": 1,
     "Questionable/Windows/Common/LWindow.cs": 1,
     "Questionable/Windows/ConfigComponents/PluginConfigComponent.cs": 1
   },

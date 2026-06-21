@@ -8,12 +8,12 @@ using ECommons.DalamudServices;
 using ECommons.ExcelServices;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using Lumina.Extensions;
 using Questionable.Model.Questing;
 using Questionable.Utils;
 using ExcelQuest = Lumina.Excel.Sheets.Quest;
 using GrandCompany = FFXIVClientStructs.FFXIV.Client.UI.Agent.GrandCompany;
 using QQuestId = Questionable.Model.Questing.QuestId;
-using static Questionable.Utils.LocalizeShortcut;
 
 namespace Questionable.Model;
 
@@ -104,6 +104,16 @@ internal sealed class QuestInfo : IQuestInfo
             .Where(x => x != null)
             .Cast<ItemReward>()
             .ToList();
+        TripleTriadCardRewards = Svc.Data.GetExcelSheet<TripleTriadCardResident>()
+            .Where(x => x.Quest.RowId == quest.RowId)
+            .Select(x => {
+                var item = Svc.Data.GetExcelSheet<Item>()
+                    // porting-note(api12): ItemAction lacks .Action (added in API15); identify the
+                    // triple-triad-card item via its typed AdditionalData instead of the use-action id.
+                    .Where(item => item.AdditionalData.GetValueOrDefault<TripleTriadCard>() is { } ttc &&
+                        ttc.RowId == x.RowId).FirstOrNull();
+                return item != null ? ItemReward.CreateFromItem(item.Value, QuestId) : null;
+            }).OfType<ItemReward>().ToList();
         Expansion = (EExpansionVersion)quest.Expansion.RowId;
     }
     public ImmutableList<QQuestId> QuestLocks { get; private set; }
@@ -125,6 +135,7 @@ internal sealed class QuestInfo : IQuestInfo
     public byte MoogleDeliveryLevel { get; }
     public bool IsMoogleDeliveryQuest => JournalGenre == 87;
     public IReadOnlyList<ItemReward> ItemRewards { get; }
+    public IReadOnlyList<ItemReward> TripleTriadCardRewards { get; }
 
     public ElementId QuestId { get; }
     public string Name { get; }

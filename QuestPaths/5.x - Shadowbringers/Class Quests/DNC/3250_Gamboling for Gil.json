@@ -1,10 +1,51 @@
-{
+﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Fifi",
+  "LastChecked": {"Username": "Logos", "Date": "2026-06-15"},
   "QuestSequence": [
     {
       "Sequence": 0,
       "Steps": [
+        {
+          "TerritoryId": 129,
+          "InteractionType": "EquipItem",
+          "ItemId": 27358,
+          "AetheryteShortcut": "Limsa Lominsa",
+          "SkipConditions": {
+            "AetheryteShortcutIf": {
+              "InSameTerritory": true
+            },
+            "StepIf": {
+              "Item": {
+                "NotInInventory": true
+              }
+            }
+          }
+        },
+        {
+          "TerritoryId": 129,
+          "InteractionType": "CreateGearset"
+        },
+        {
+          "TerritoryId": 129,
+          "InteractionType": "UseItem",
+          "ItemId": 27267,
+          "SkipConditions": {
+            "StepIf": {
+              "Item": {
+                "NotInInventory": true
+              }
+            }
+          }
+        },
+        {
+          "TerritoryId": 129,
+          "InteractionType": "EquipRecommended"
+        },
+        {
+          "TerritoryId": 129,
+          "InteractionType": "UpdateGearset"
+        },
         {
           "DataId": 1028724,
           "Position": {
@@ -13,13 +54,7 @@
             "Z": 195.94104
           },
           "TerritoryId": 129,
-          "InteractionType": "AcceptQuest",
-          "AetheryteShortcut": "Limsa Lominsa",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "InteractionType": "AcceptQuest"
         }
       ]
     },

@@ -120,10 +120,10 @@ internal sealed class AlliedSocietyJournalComponent
                 if (quests.Any(x => !x.QuestId.Value.Equals(1569) && ( // is not the Ixal delivery quest "Deliverance", and
                         !questRegistry.TryGetQuest(x.QuestId, out Quest? quest) || // is not a valid quest in the registry, or
                         (quest.Root.Disabled && quest.Root.Comment == null) || // is disabled without a comment explaining why, or
-                        (quest.Root.LastChecked.Date != null && (
-                            quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays > 30 || // has not been reported checked in more than 30 days, or
-                            (quest.Root.Comment ?? "").Contains("FATE") // is a FATE quest where we don't care that much
-                        ) )
+                        (quest.Root.LastChecked.Date != null &&
+                            quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays > 30 && // has not been reported checked in more than 30 days, or
+                            !(quest.Root.Comment ?? "").Contains("FATE") // is not a FATE quest, we don't care that much
+                        )
                     )
                 ))
                 {
@@ -186,13 +186,13 @@ internal sealed class AlliedSocietyJournalComponent
             {
                 lastChecked = $"({quest.Root.LastChecked.Date})";
                 if (quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays > 30)
-                    color = ImGuiColors.DalamudRed;
+                    color = ImGuiColors.DalamudOrange;
             }
             else
-                color = ImGuiColors.DPSRed;
+                color = ImGuiColors.ParsedOrange;
             if (quest.Root.Disabled && (quest.Root.Comment ?? "").Contains("FATE"))
             {
-                color = ImGuiColors.DalamudOrange;
+                color = ImGuiColors.DalamudRed;
                 fate = true;
             }
         }
@@ -204,7 +204,7 @@ internal sealed class AlliedSocietyJournalComponent
             checklistItem = $"[+{questInfo.SocietyRepValue}] " + checklistItem;
         if (uiUtils.ChecklistItem(checklistItem, color, icon))
             questTooltipComponent.Draw(questInfo);
-        if (addPending && (color.Equals(ImGuiColors.DalamudRed) || color.Equals(ImGuiColors.DPSRed)))
+        if (addPending && (color.Equals(ImGuiColors.DalamudOrange) || color.Equals(ImGuiColors.ParsedOrange)))
             questController.PriorityManager.Add(questInfo.QuestId);
 
         questJournalUtils.ShowContextMenu(questInfo, quest, nameof(AlliedSocietyJournalComponent));

@@ -40,8 +40,16 @@
           }
         },
         {
-          "TerritoryId": 131,
+          "TerritoryId": 134,
+          "InteractionType": "CreateGearset"
+        },
+        {
+          "TerritoryId": 134,
           "InteractionType": "EquipRecommended"
+        },
+        {
+          "TerritoryId": 134,
+          "InteractionType": "UpdateGearset"
         },
         {
           "DataId": 1039265,
@@ -183,7 +191,6 @@
           "StopDistance": 5,
           "TerritoryId": 399,
           "InteractionType": "SinglePlayerDuty",
-          "Comment": "Please report in discord whether this solo duty works fine.\nIt has not been tested yet and may fail. Thank you.",
           "SinglePlayerDutyOptions": {"Enabled": true},
           "AetheryteShortcut": "Idyllshire",
           "AethernetShortcut": [

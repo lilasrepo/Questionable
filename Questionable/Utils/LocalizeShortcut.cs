@@ -8,6 +8,8 @@ namespace Questionable.Utils;
 [SuppressMessage("Style", "IDE1006:Naming Styles")]
 internal static class LocalizeShortcut
 {
+    // no-op: the passthrough shim needs no I18N.DotNet initialization; upstream calls this at startup.
+    internal static void Initialize(Questionable.Configuration configuration) { }
     internal static string _L(string input) => input;
     internal static string _LF(string input, params object[] args) => args.Length == 0 ? input : string.Format(input, args);
 }

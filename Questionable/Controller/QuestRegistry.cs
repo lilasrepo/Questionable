@@ -8,6 +8,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Services;
@@ -26,7 +27,9 @@ using Questionable.Utils;
 using Questionable.Validation;
 using Questionable.Validation.Validators;
 using static Questionable.Model.QuestInfo;
+using static Questionable.Utils.CacheUtils;
 using Sheets = Lumina.Excel.Sheets;
+using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Controller;
 
 internal sealed class QuestRegistry
@@ -70,7 +73,8 @@ internal sealed class QuestRegistry
     }
 
     public IEnumerable<Quest> AllQuests => _quests.Values;
-    public int Count => _quests.Count(x => !x.Value.Root.Disabled);
+    private CachedValue<int> _count = new(ttlSeconds: 1);
+    public int Count => _count.Get(() => _quests.Count(x => !x.Value.Root.Disabled));
     public int ValidationIssueCount => _questValidator.IssueCount;
     public int ValidationErrorCount => _questValidator.ErrorCount;
 
@@ -89,7 +93,12 @@ internal sealed class QuestRegistry
         if (!LoadQuestsFromDownloadedBundle())
             //LoadQuestsFromAssembly();
             _logger.LogWarning("Bundled quests were not loaded, we have no quests!");
-        LoadQuestsFromProjectDirectory();
+        if (_configuration.Advanced.Debug || Svc.PluginInterface.IsDev
+        #if DEBUG
+        || true
+        #endif
+        )
+            LoadQuestsFromProjectDirectory();
 
         try
         {
@@ -146,7 +155,6 @@ internal sealed class QuestRegistry
         _logger.LogInformation("Loaded {Count} quests from assembly", _quests.Count);
     }
 
-    [Conditional("DEBUG")]
     private void LoadQuestsFromProjectDirectory()
     {
         DirectoryInfo? solutionDirectory = _pluginInterface.AssemblyLocation.Directory?.Parent?.Parent;
@@ -441,48 +449,48 @@ internal sealed class QuestRegistry
     }
     public static string GetQuestPathsDirectory()
     {
-#if DEBUG
-        return Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths");
-#else
+        var pluginConfig = Svc.PluginInterface.GetPluginConfig();
+        if (pluginConfig is Configuration config && config.Advanced.Debug && Svc.PluginInterface.IsDev)
+            return Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths");
         return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests");
-#endif
     }
     public static string? GetFullPath(IQuestInfo info) => GetFullPath((QuestInfo)info);
     public static string? GetFullPath(QuestInfo info)
     {
         var filename = GetFilename(info);
-#if DEBUG
-        DirectoryInfo? targetFolder = new(Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths", ExpansionData.ExpansionFolders[info.Expansion]));
-        if (targetFolder == null)
-            return null;
-        if (info.JournalGenre == null || info.JournalGenre == uint.MaxValue)
-            return Path.Combine(targetFolder.FullName, "Unsorted", filename);
-        var genre = Svc.Data.GetExcelSheet<Sheets.JournalGenre>().GetRow(info.JournalGenre.Value);
-        var path = $"{genre.Name}";
-        Svc.Log.Debug($"Genre: {genre.Name}");
-        if (genre.JournalCategory.ValueNullable != null)
+        var pluginConfig = Svc.PluginInterface.GetPluginConfig();
+        if (pluginConfig is Configuration config && config.Advanced.Debug && Svc.PluginInterface.IsDev)
         {
-            var category = genre.JournalCategory.Value;
-            Svc.Log.Debug($"Category: {category.Name}");
-            if (category.Name != genre.Name)
-                path = Path.Combine($"{category.Name}", path);
-            if (category.JournalSection.ValueNullable != null)
+            DirectoryInfo? targetFolder = new(Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths", ExpansionData.ExpansionFolders[info.Expansion]));
+            if (targetFolder == null)
+                return null;
+            if (info.JournalGenre == null || info.JournalGenre == uint.MaxValue)
+                return Path.Combine(targetFolder.FullName, "Unsorted", filename);
+            var genre = Svc.Data.GetExcelSheet<Sheets.JournalGenre>().GetRow(info.JournalGenre.Value);
+            var path = $"{genre.Name}";
+            Svc.Log.Debug($"Genre: {genre.Name}");
+            if (genre.JournalCategory.ValueNullable != null)
             {
-                var section = category.JournalSection.Value;
-                Svc.Log.Debug($"Section: {section.Name}");
-                if (section.Name != category.Name)
+                var category = genre.JournalCategory.Value;
+                Svc.Log.Debug($"Category: {category.Name}");
+                if (category.Name != genre.Name)
+                    path = Path.Combine($"{category.Name}", path);
+                if (category.JournalSection.ValueNullable != null)
                 {
-                    var catPath = $"{category.Name}".Replace($"{section.Name}", "").Trim();
-                    path = Path.Combine($"{section.Name}", catPath, category.Name != genre.Name ? $"{genre.Name}" : "");
+                    var section = category.JournalSection.Value;
+                    Svc.Log.Debug($"Section: {section.Name}");
+                    if (section.Name != category.Name)
+                    {
+                        var catPath = $"{category.Name}".Replace($"{section.Name}", "").Trim();
+                        path = Path.Combine($"{section.Name}", catPath, category.Name != genre.Name ? $"{genre.Name}" : "");
+                    }
                 }
             }
+            if (path == null || path.Length == 0)
+                return Path.Combine(targetFolder.FullName, "Unsorted", filename);
+            return Path.Combine(targetFolder.FullName, path, filename);
         }
-        if (path == null || path.Length == 0)
-            return Path.Combine(targetFolder.FullName, "Unsorted", filename);
-        return Path.Combine(targetFolder.FullName, path, filename);
-#else
         return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests", filename);
-#endif
     }
     public static (bool, FileInfo?, string) CreatePath(IQuestInfo info) => CreatePath((QuestInfo)info);
     public static (bool, FileInfo?, string) CreatePath(QuestInfo info, Quest? quest = null, bool dryrun = false)
@@ -536,6 +544,14 @@ internal sealed class QuestRegistry
             newNode.WriteTo(writer, JsonOptions.Default);
         }
         return (true, file, $"File created{(dryrun ? " (dry run)" : "")}");
+    }
+    public static string OpenEditorDescription
+    {
+        get => _L("Clicking this button writes the quest path to a file and opens it in your default\n" +
+                  "text editor. After making a change, click Reload Data below. To revert to the\n" +
+                  "official version, delete the file and click Reload Data again.\n" +
+                  "Left click: Open this quest in your default .json text editor\n" +
+                  "Right click: Open Quests folder");
     }
     public static (bool, string) OpenEditor(IQuestInfo info) => OpenEditor((QuestInfo)info);
     public static (bool, string) OpenEditor(QuestInfo info) => OpenEditor(GetFilename(info), info);
