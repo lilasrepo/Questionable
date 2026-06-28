@@ -11,7 +11,9 @@ public enum EItemRewardType
     Minion,
     OrchestrionRoll,
     TripleTriadCard,
-    FashionAccessory
+    FashionAccessory,
+    Coffer,
+    UnlockLink
 }
 
 public sealed class ItemRewardDetails(Item item, ElementId elementId)
@@ -29,8 +31,14 @@ public abstract record ItemReward(ItemRewardDetails Item)
     public ElementId ElementId => Item.ElementId;
     public TimeSpan CastTime => Item.CastTime;
     public abstract EItemRewardType Type { get; }
+    internal static bool IsValidCoffer(Item item) =>
+        item.ItemAction.RowId is 1085 or 388 or 367 && item.ItemUICategory.RowId is 61;
+
     internal static ItemReward? CreateFromItem(Item item, ElementId elementId)
     {
+        if (IsValidCoffer(item))
+            return new CofferReward(new(item, elementId));
+
         // API12 ItemAction lacks .Action property (added in API15). Use the .Type column directly,
         // which encodes the action category in game 7.1.
         if (item.ItemAction.Value is { } itemAction)
@@ -44,6 +52,11 @@ public abstract record ItemReward(ItemRewardDetails Item)
 
             if (actionType is 20086)
                 return new FashionAccessoryReward(new(item, elementId), item.ItemAction.Value.Data[0]);
+
+            // porting-note: API15 maps these via ItemAction.Action.RowId; in API12 the same
+            // category constant is read directly off ItemAction.Type (game 7.1).
+            if (actionType is 2633)
+                return new UnlockLinkReward(new(item, elementId), (ushort)item.ItemAction.Value.Data[0]);
         }
         else if (item.AdditionalData.GetValueOrDefault<Orchestrion>() is { } orchestrionRoll)
             return new OrchestrionRollReward(new(item, elementId), orchestrionRoll.RowId);
@@ -93,4 +106,18 @@ public sealed record FashionAccessoryReward(ItemRewardDetails Item, uint Accesso
     public override EItemRewardType Type => EItemRewardType.FashionAccessory;
 
     public override unsafe bool IsUnlocked() => PlayerState.Instance()->IsOrnamentUnlocked(AccessoryId);
+}
+
+public sealed record CofferReward(ItemRewardDetails Item) : ItemReward(Item)
+{
+    public override EItemRewardType Type => EItemRewardType.Coffer;
+
+    public override bool IsUnlocked() => false;
+}
+
+public sealed record UnlockLinkReward(ItemRewardDetails Item, ushort UnlockLinkId) : ItemReward(Item)
+{
+    public override EItemRewardType Type => EItemRewardType.UnlockLink;
+
+    public override unsafe bool IsUnlocked() => UIState.Instance()->IsUnlockLinkUnlocked(UnlockLinkId);
 }
