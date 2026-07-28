@@ -1,11 +1,11 @@
-# Questionable（繁中移植版 · TC12） / Traditional-Chinese Port
+# Questionable（繁中移植版 · TC13） / Traditional-Chinese Port
 
 > 一個小小的任務輔助插件。<br>
 > A tiny quest helper plugin.
 
-**繁體中文**：這是 **[Questionable](https://github.com/PunishXIV/Questionable)** 的繁體中文客戶端移植版，對應 **FFXIV 7.1 / yanmucorp Dalamud API12（.NET 9）**。本專案僅做相容性移植，**非官方、非原作維護**；所有原始功能與設計著作權歸原作者 **liza、qstxiv 及眾多貢獻者**。
+**繁體中文**：這是 **[Questionable](https://github.com/PunishXIV/Questionable)** 的繁體中文客戶端移植版，對應 **FFXIV 7.20 / yanmucorp Dalamud API13（.NET 9）**。本專案僅做相容性移植，**非官方、非原作維護**；所有原始功能與設計著作權歸原作者 **liza、qstxiv 及眾多貢獻者**。
 
-**English**: A Traditional-Chinese-client port of **[Questionable](https://github.com/PunishXIV/Questionable)** targeting **FFXIV 7.1 / yanmucorp Dalamud API12 (.NET 9)**. Compatibility port only — **unofficial and not maintained by the original author**. All original work © **liza, qstxiv & various contributors**.
+**English**: A Traditional-Chinese-client port of **[Questionable](https://github.com/PunishXIV/Questionable)** targeting **FFXIV 7.20 / yanmucorp Dalamud API13 (.NET 9)**. Compatibility port only — **unofficial and not maintained by the original author**. All original work © **liza, qstxiv & various contributors**.
 
 ---
 
@@ -17,12 +17,12 @@ Automatically does quests where possible — uses navmesh to walk to quest waypo
 
 ## 需要的前置插件 / Required plugins
 
-本插件需要以下插件才能運作（本插件庫皆提供 TC12 版）：<br>
-This plugin requires the following (all available as TC12 builds in this repo):
+本插件需要以下插件才能運作（本插件庫皆提供 TC13 版）：<br>
+This plugin requires the following (all available as TC13 builds in this repo):
 
-- **vnavmesh (TC12)** — 自動尋路 / navigation
-- **TextAdvance (TC12)** — 對話自動推進 / dialogue automation
-- **Lifestream (TC12)** — 傳送 / teleport
+- **vnavmesh (TC13)** — 自動尋路 / navigation
+- **TextAdvance (TC13)** — 對話自動推進 / dialogue automation
+- **Lifestream (TC13)** — 傳送 / teleport
 
 ## 安裝 / Installation
 
@@ -33,7 +33,7 @@ This plugin requires the following (all available as TC12 builds in this repo):
    ```
    https://raw.githubusercontent.com/lilasrepo/DalamudPlugins/main/pluginmaster.json
    ```
-4. 輸入 `/xlplugins`，搜尋 **Questionable (TC12)** → 安裝 → 啟用。
+4. 輸入 `/xlplugins`，搜尋 **Questionable (TC13)** → 安裝 → 啟用。
 
 **English**
 1. Launch the Traditional-Chinese client with **XIVTCLauncher**.
@@ -42,14 +42,14 @@ This plugin requires the following (all available as TC12 builds in this repo):
    ```
    https://raw.githubusercontent.com/lilasrepo/DalamudPlugins/main/pluginmaster.json
    ```
-4. Type `/xlplugins`, search **Questionable (TC12)** → Install → Enable.
+4. Type `/xlplugins`, search **Questionable (TC13)** → Install → Enable.
 
 ## 對應版本 / Compatibility
 
 | 項目 / Item | 版本 / Version |
 |---|---|
-| 遊戲 / Game | FFXIV 7.1（繁中客戶端 / TC client） |
-| Dalamud | yanmucorp API12（.NET 9） |
+| 遊戲 / Game | FFXIV 7.20（繁中客戶端 / TC client） |
+| Dalamud | yanmucorp API13（.NET 9） |
 | 移植自上游 / Ported from upstream | v15.300.0.4 |
 
 ## 原作與授權 / Credits & License
