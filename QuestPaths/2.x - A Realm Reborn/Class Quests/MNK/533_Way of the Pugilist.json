@@ -1,6 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": ["liza", "plogon_enjoyer"],
+  "Interruptible": false,
   "LastChecked": {"Username": "alydev", "Date": "2026-06-19"},
   "QuestSequence": [
     {
@@ -14,12 +15,7 @@
           },
           "TerritoryId": 130,
           "InteractionType": "WalkTo",
-          "AetheryteShortcut": "Ul'dah",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "AetheryteShortcut": "Ul'dah"
         },
         {
           "DataId": 1001286,
@@ -38,15 +34,18 @@
       "Steps": [
         {
           "InteractionType": "CreateGearset",
-          "TerritoryId": 130
+          "TerritoryId": 130,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "InteractionType": "EquipRecommended",
-          "TerritoryId": 130
+          "TerritoryId": 130,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "InteractionType": "UpdateGearset",
-          "TerritoryId": 130
+          "TerritoryId": 130,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "DataId": 1003817,

@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-21"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-28"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -10,12 +11,7 @@
           "TerritoryId": 137,
           "InteractionType": "EquipItem",
           "ItemId": 4544,
-          "AetheryteShortcut": "Eastern La Noscea - Costa Del Sol",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "AetheryteShortcut": "Eastern La Noscea - Costa Del Sol"
         },
         {
           "DataId": 1006746,
@@ -42,11 +38,6 @@
           "TerritoryId": 146,
           "InteractionType": "Interact",
           "AetheryteShortcut": "Southern Thanalan - Forgotten Springs",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          },
           "CompletionQuestVariablesFlags": [null,null,null,null,null,128]
         },
         {

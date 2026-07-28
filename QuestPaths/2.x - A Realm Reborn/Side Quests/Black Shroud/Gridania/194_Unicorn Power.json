@@ -1,11 +1,11 @@
-{
+﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": ["Kiarra"," alydev"],
   
+  "LastChecked": {"Username": "Iskierka", "Date": "2026-07-05"},
   "QuestSequence": [
     {
       "Sequence": 0,
-      "Comment": "Unequip Soul of the White Mage to see this quest",
       "Steps": [
         {
           "InteractionType": "None",
@@ -34,6 +34,11 @@
               }
             }
           }
+        },
+        {
+          "TerritoryId": 133,
+          "InteractionType": "SwitchClass",
+          "TargetClass": "Conjurer"
         },
         {
           "DataId": 1000705,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -9,16 +9,10 @@ using Dalamud.Game.ClientState.Objects;
 using ECommons;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using Questionable.Controller.Steps.Shared;
-using Questionable.Functions;
 using Questionable.Model.Questing;
-using Questionable.Windows;
-using Quest = Questionable.Model.Quest;
-using static Questionable.Utils.LocalizeShortcut;
-using Questionable.Data;
-using Questionable.Model;
+using Quest = Questionable.Domain.Quest;
 
 namespace Questionable.Controller;
 
@@ -231,7 +225,7 @@ internal sealed class CommandHandler : IDisposable
             case "d2qwh":
                 if (parts.Length < 2)
                     break;
-                string highOutp = D2QW(parts.Skip(1).ToArray(), true);
+                string highOutp = D2QW(parts.Skip(1).ToArray(), High: true);
                 ImGui.SetClipboardText(highOutp);
                 _chatGui.Print(highOutp);
                 break;
@@ -303,7 +297,7 @@ internal sealed class CommandHandler : IDisposable
         {
             byte d = byte.Parse(part.RemoveOtherChars("0123456789"), CultureInfo.InvariantCulture);
             QuestWorkValue qw = new(d);
-            string value = " {\"" + (High ? "High" : "Low") + "\": " + (High ? qw.High : qw.Low) + "}";
+            string value = $" {{\"{(High ? "High" : "Low")}\": {(High ? qw.High : qw.Low)}}}";
             if (!outp.Contains(value))
                 outp.Add(value);
         }
@@ -319,10 +313,6 @@ internal sealed class CommandHandler : IDisposable
         string[] parts = arguments.Split(' ');
         switch (parts[0])
         {
-            case "abandon-duty":
-                _gameFunctions.AbandonDuty();
-                break;
-
             case "unlock-links":
                 IReadOnlyList<uint>? unlockedUnlockLinks = _gameFunctions.GetUnlockLinks();
                 if (unlockedUnlockLinks != null)
@@ -437,21 +427,21 @@ internal sealed class CommandHandler : IDisposable
         {
             (var isLocked, string[]? reasons) = _questFunctions.IsQuestLocked(questId);
             if (isLocked)
-                _chatGui.PrintError(_LF("Quest {0} is locked.", questId) + (reasons != null ? string.Join(',',reasons) : ""),
+                _chatGui.PrintError(_LF("Quest {0} is locked.", questId) + (reasons != null ? string.Join(',', reasons) : ""),
                     MessageTag, TagColor);
             else if (_questRegistry.TryGetQuest(questId, out Quest? quest))
             {
                 _questController.SetNextQuest(quest);
-                _chatGui.Print(_LF("Set next quest to {0} ({1}).", questId, quest.Info.Name) + (reasons != null ? string.Join(',',reasons) : ""),
+                _chatGui.Print(_LF("Set next quest to {0} ({1}).", questId, quest.Info.Name) + (reasons != null ? string.Join(',', reasons) : ""),
                     MessageTag, TagColor);
             }
             else
-                _chatGui.PrintError(_LF("Unknown quest {0}.", questId) + (reasons != null ? string.Join(',',reasons) : ""),
+                _chatGui.PrintError(_LF("Unknown quest {0}.", questId) + (reasons != null ? string.Join(',', reasons) : ""),
                     MessageTag, TagColor);
         }
         else
         {
-            _questController.SetNextQuest(null);
+            _questController.SetNextQuest(quest: null);
             _chatGui.Print(_L("Cleared next quest."), MessageTag, TagColor);
         }
     }

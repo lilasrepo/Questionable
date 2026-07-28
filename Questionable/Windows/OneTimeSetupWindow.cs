@@ -1,13 +1,8 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using Microsoft.Extensions.Logging;
-using Questionable.Utils;
 using Questionable.Windows.Common;
-using Questionable.Windows.ConfigComponents;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows;
 
 internal sealed class OneTimeSetupWindow : LWindow
@@ -23,7 +18,7 @@ internal sealed class OneTimeSetupWindow : LWindow
         IDalamudPluginInterface pluginInterface,
         ILogger<OneTimeSetupWindow> logger)
         : base(_L("Questionable Setup") + "###QuestionableOneTimeSetup",
-            ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings, true)
+            ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings, forceMainWindow: true)
     {
         _pluginConfigComponent = pluginConfigComponent;
         _configuration = configuration;
@@ -48,7 +43,7 @@ internal sealed class OneTimeSetupWindow : LWindow
 
         if (allRequiredInstalled)
         {
-            using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.ParsedGreen))
+            using (ImRaii.PushColor(ImGuiCol.Text, QstTheme.Success))
             {
                 if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Check, _L("Finish Setup")))
                 {
@@ -63,7 +58,7 @@ internal sealed class OneTimeSetupWindow : LWindow
         {
             using (ImRaii.Disabled())
             {
-                using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
+                using (ImRaii.PushColor(ImGuiCol.Text, QstTheme.Danger))
                 {
                     ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Check, _L("Missing required plugins"));
                 }

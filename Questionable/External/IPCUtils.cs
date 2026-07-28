@@ -1,19 +1,15 @@
-﻿using System;
-using ECommons.DalamudServices;
-using ECommons.EzIpcManager;
-using ECommons.Reflection;
-namespace Questionable.External;
+﻿namespace Questionable.External;
 
 internal interface IPCUtils
 {
-    internal sealed class IPCSubscriber_Common
+    internal sealed class IPCSubscriber
     {
-        internal static bool IsReady(string pluginName) => DalamudReflector.TryGetDalamudPlugin(pluginName, out Dalamud.Plugin.IDalamudPlugin _, false, true);
+        internal static bool IsInstalled(string pluginName) => DalamudReflector.TryGetDalamudPlugin(pluginName, out IDalamudPlugin _, suppressErrors: false, ignoreCache: true);
 
         internal static Version Version(string pluginName)
         {
             Version _version;
-            if (DalamudReflector.TryGetDalamudPlugin(pluginName, out Dalamud.Plugin.IDalamudPlugin? dalamudPlugin, false, true))
+            if (DalamudReflector.TryGetDalamudPlugin(pluginName, out IDalamudPlugin? dalamudPlugin, suppressErrors: false, ignoreCache: true))
                 _version = dalamudPlugin.GetType().Assembly.GetName().Version ?? new Version(0, 0, 0, 0);
             else
                 _version = new(0, 0, 0, 0);

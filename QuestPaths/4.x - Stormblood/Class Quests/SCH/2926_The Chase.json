@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Shorkolate", "Date": "2026-06-15"},
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-20"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -16,12 +16,7 @@
           "StopDistance": 5,
           "TerritoryId": 153,
           "InteractionType": "AcceptQuest",
-          "AetheryteShortcut": "South Shroud - Camp Tranquil",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "AetheryteShortcut": "South Shroud - Camp Tranquil"
         }
       ]
     },

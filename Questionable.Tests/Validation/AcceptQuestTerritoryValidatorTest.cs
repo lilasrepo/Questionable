@@ -1,13 +1,15 @@
-using System.Collections.Generic;
-using System.Linq;
+// Authored with LLM assistance, changes must be reviewed and owned by a human.
+// Initial version reviewed and owned by @alydevs
+
 using NSubstitute;
 using Questionable.Data;
-using Questionable.Model;
 using Questionable.Model.Common;
 using Questionable.Model.Questing;
 using Questionable.Validation;
 using Questionable.Validation.Validators;
 using Xunit;
+
+using static Questionable.Tests.TestData.QuestTestData;
 
 namespace Questionable.Tests.Validation;
 
@@ -42,22 +44,6 @@ public sealed class AcceptQuestTerritoryValidatorTest
     }
 
     // --- helpers ---
-
-    private static Quest CreateQuest(ElementId id, params QuestSequence[] sequences)
-    {
-        var info = Substitute.For<IQuestInfo>();
-        info.QuestId.Returns(id);
-        return new Quest
-        {
-            Id = id,
-            Source = Quest.ESource.Assembly,
-            Root = new QuestRoot { QuestSequence = [.. sequences] },
-            Info = info,
-        };
-    }
-
-    private static QuestSequence Seq(byte sequence, params QuestStep[] steps) =>
-        new() { Sequence = sequence, Steps = [.. steps] };
 
     private static QuestStep InteractStep(uint territoryId,
         EAetheryteLocation? aetheryteShortcut = null,

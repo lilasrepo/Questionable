@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using Dalamud.Plugin.Services;
+﻿using System.Collections.ObjectModel;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Application.Network.WorkDefinitions;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -106,7 +102,7 @@ internal sealed class ClassJobUtils
                 ? [gatherJob]
                 : [],
 
-            var _ => throw new ArgumentOutOfRangeException(nameof(classJob), classJob, null)
+            var _ => throw new ArgumentOutOfRangeException(nameof(classJob), classJob, message: null)
         };
     }
 
@@ -197,5 +193,57 @@ internal sealed class ClassJobUtils
         }
 
         return Job.ADV;
+    }
+
+    private readonly Dictionary<Job, (Job, ushort)> classToJobStone = new() {
+                { Job.GLA, (Job.PLD, 4542) },
+                { Job.PGL, (Job.MNK, 4543) },
+                { Job.MRD, (Job.WAR, 4544) },
+                { Job.LNC, (Job.DRG, 4545) },
+                { Job.ARC, (Job.BRD, 4546) },
+                { Job.CNJ, (Job.WHM, 4547) },
+                { Job.THM, (Job.BLM, 4548) },
+                { Job.ACN, (Job.SMN, 4549) },
+                { Job.ROG, (Job.NIN, 7886) }
+            };
+    public (Job?, ushort?) ClassToJobStone(Job classJob)
+    {
+        if (classToJobStone.TryGetValue(classJob, out var value))
+        {
+            (var job, var item) = value;
+            bool unlocked = false;
+            unsafe
+            {
+                InventoryManager* inventoryManager = InventoryManager.Instance();
+                if (inventoryManager->GetInventoryItemCount(item) > 0)
+                    unlocked = true;
+            }
+            if (unlocked)
+            {
+                return (job, item);
+            }
+        }
+        return (null, null);
+    }
+
+    public unsafe bool SwitchClassJob(Job classJob)
+    {
+        if (PlayerState.Instance()->CurrentClassJobId == (uint)classJob)
+            return true;
+
+        RaptureGearsetModule* gearsetModule = RaptureGearsetModule.Instance();
+        if (gearsetModule != null)
+        {
+            for (int i = 0; i < 100; ++i)
+            {
+                RaptureGearsetModule.GearsetEntry* gearset = gearsetModule->GetGearset(i);
+                if (gearset->ClassJob == (byte)classJob)
+                {
+                    gearsetModule->EquipGearset(gearset->Id);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

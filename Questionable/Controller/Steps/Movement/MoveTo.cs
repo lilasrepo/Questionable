@@ -1,11 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
-using Dalamud.Plugin.Services;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller.Steps.Common;
+﻿using Questionable.Controller.Steps.Common;
 using Questionable.Controller.Steps.Shared;
-using Questionable.Data;
-using Questionable.Model;
 using Questionable.Model.Common;
 using Questionable.Model.Questing;
 namespace Questionable.Controller.Steps.Movement;
@@ -23,18 +17,19 @@ internal static class MoveTo
         {
             if (step.Position != null)
                 return CreateMoveTasks(quest, step, step.Position.Value);
-            else if (step is { DataId: not null, StopDistance: not null })
+            if (step is { DataId: not null, StopDistance: not null })
                 return [new WaitForNearDataId(step.DataId.Value, step.StopDistance.Value)];
-            else if (step is
-            {
-                InteractionType: EInteractionType.AttuneAetheryte
-                or EInteractionType.RegisterFreeOrFavoredAetheryte,
-                Aetheryte: { } aetheryteLocation
-            })
+            if (step is
+                {
+                    InteractionType: EInteractionType.AttuneAetheryte
+                            or EInteractionType.RegisterFreeOrFavoredAetheryte,
+                    Aetheryte: { } aetheryteLocation
+                })
             {
                 return CreateMoveTasks(quest, step, aetheryteData.Locations[aetheryteLocation]);
             }
-            else if (step is { InteractionType: EInteractionType.AttuneAethernetShard, AethernetShard: { } aethernetShard })
+
+            if (step is { InteractionType: EInteractionType.AttuneAethernetShard, AethernetShard: { } aethernetShard })
                 return CreateMoveTasks(quest, step, aetheryteData.Locations[aethernetShard]);
 
             return [];
@@ -58,7 +53,7 @@ internal static class MoveTo
                     var fromTerritory = aetheryteData.TerritoryIds[step.AethernetShortcut.From];
                     var toTerritory = aetheryteData.TerritoryIds[step.AethernetShortcut.To];
                     yield return new WaitCondition.Task(() => clientState.TerritoryType == fromTerritory || clientState.TerritoryType == toTerritory,
-                    $"Wait(territori: {TerritoryData.GetNameAndId(fromTerritory)}|{TerritoryData.GetNameAndId(toTerritory)})");
+                    $"Wait(territori: {TerritoryData.GetNameAndId(fromTerritory)}|{(fromTerritory != toTerritory ? TerritoryData.GetNameAndId(toTerritory) : '*')})");
                     yield return new Shared.AethernetShortcut.Task(step.AethernetShortcut.From, step.AethernetShortcut.To);
                 }
             }

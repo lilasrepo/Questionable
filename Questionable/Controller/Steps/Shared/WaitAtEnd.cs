@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Numerics;
+﻿using System.Runtime.CompilerServices;
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Plugin.Services;
 using Questionable.Controller.Steps.Common;
-using Questionable.Controller.Utils;
-using Questionable.Data;
-using Questionable.External;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Windows.Utils;
 namespace Questionable.Controller.Steps.Shared;
 
+// TODO: refactor — heavy nesting (27 lines indented ≥6 levels, max indent ~9 levels).
 internal static class WaitAtEnd
 {
     internal sealed class Factory
@@ -22,6 +12,7 @@ internal static class WaitAtEnd
         IObjectTable objectTable,
         ICondition condition,
         AutoDutyIpc autoDutyIpc,
+        IAutoHookIpc autoHookIpc,
         BossModIpc bossModIpc,
         RedoUtil redoUtil,
         QuestData questData,
@@ -60,6 +51,7 @@ internal static class WaitAtEnd
 
                 case EInteractionType.Duty when !autoDutyIpc.IsConfiguredToRunContent(step.DutyOptions):
                 case EInteractionType.SinglePlayerDuty when !bossModIpc.IsConfiguredToRunSoloInstance(quest.Id, step.SinglePlayerDutyOptions):
+                case EInteractionType.Fish when !autoHookIpc.IsAvailable():
                     return [new EndAutomation()];
 
                 case EInteractionType.WalkTo:
@@ -68,6 +60,7 @@ internal static class WaitAtEnd
                     return [Next(quest, sequence)];
 
                 case EInteractionType.WaitForObjectAtPosition:
+                case EInteractionType.WaitForNpcAtPosition:
                     if (!step.DataId.HasValue)
                         throw new ArgumentNullException(nameof(step.DataId));
                     if (!step.Position.HasValue)
@@ -102,7 +95,7 @@ internal static class WaitAtEnd
                                 //   - waking sands' solar
                                 //   - rising stones' solar + dawn's respite
                                 return (lastPosition - currentPosition.Value).Length() > 2;
-                            }, $"Wait(tp away from {lastPosition.ToString("G", CultureInfo.InvariantCulture)})");
+                            }, $"Wait(tp away from {lastPosition.ToString("G5", CultureInfo.InvariantCulture)})");
                     }
 
                     return
@@ -122,15 +115,15 @@ internal static class WaitAtEnd
                                 return [delay, Next(quest, sequence)];
                             return [accept, delay, Next(quest, sequence)];
                         }
-                        else
-                            return [accept, delay];
+
+                        return [accept, delay];
                     }
 
                 case EInteractionType.CompleteQuest:
                     {
                         WaitQuestCompleted complete = new(step.TurnInQuestId ?? quest.Id);
                         WaitDelay delay = new();
-                        List<ITask> tasks = [complete, delay, ..RedeemRewardItems.CreateRedeemTasks(questData, dataManager)];
+                        List<ITask> tasks = [complete, delay, .. RedeemRewardItems.CreateRedeemTasks(questData, dataManager)];
                         if (step.TurnInQuestId != null)
                             tasks.Add(Next(quest, sequence));
                         return tasks;
@@ -145,19 +138,22 @@ internal static class WaitAtEnd
         private static NextStep Next(Quest quest, QuestSequence sequence) => new(quest.Id, sequence.Sequence);
     }
 
-    internal sealed record WaitDelay(TimeSpan Delay, string? Message) : ITask
+    internal sealed record WaitDelay(TimeSpan Delay, string? Message,
+                   [CallerFilePath] string file = "", [CallerLineNumber] int line = 0) : ITask
     {
-        public WaitDelay()
-            : this(TimeSpan.FromSeconds(1), null)
+        public WaitDelay([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+            : this(TimeSpan.FromMilliseconds(250), Message: null, file: file, line: line)
         {
         }
-        public WaitDelay(TimeSpan Delay) : this(Delay, null)
+        public WaitDelay(TimeSpan Delay, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+            : this(Delay, Message: null, file: file, line: line)
         {
         }
 
         public bool ShouldRedoOnInterrupt() => true;
 
-        public override string ToString() => $"Wait(seconds: {Delay.TotalSeconds}{(Message != null ? $", message: {Message}" : "")})";
+        public override string ToString() =>
+            $"Wait(seconds: {Delay.TotalSeconds}{(Message != null ? $", message: {Message}" : "")}, {Path.GetFileNameWithoutExtension(file)}:L{line})";
     }
 
     internal sealed class WaitDelayExecutor : AbstractDelayedTaskExecutor<WaitDelay>
@@ -213,7 +209,7 @@ internal static class WaitAtEnd
         Vector3 Destination,
         float Distance) : ITask
     {
-        public override string ToString() => $"WaitObj({DataId} at {Destination.ToString("G", CultureInfo.InvariantCulture)} < {Distance})";
+        public override string ToString() => $"WaitObj({DataId} at {Destination.ToString("G5", CultureInfo.InvariantCulture)} < {Distance})";
     }
 
     internal sealed class WaitObjectAtPositionExecutor(GameFunctions gameFunctions) : TaskExecutor<WaitObjectAtPosition>

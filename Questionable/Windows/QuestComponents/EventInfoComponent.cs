@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,13 +8,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Humanizer;
 using Humanizer.Localisation;
-using Questionable.Controller;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Utils;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Windows.QuestComponents;
 
 internal sealed class EventInfoComponent
@@ -31,8 +25,7 @@ internal sealed class EventInfoComponent
     private readonly List<EventQuest> _eventQuests =
     [
         // Add seasonal events here. If a quest has additional required quests (e.g Make It Rain > Gold Saucer), add a relation in QuestData#L220
-        new(_L("Limited Time Items"), [new UnlockLinkId(568)], DateTime.MaxValue),
-        new(_L("Dragon Quest X 2026"), [new QuestId(1288)], AtDailyReset(new(2026,7,13)))
+        new(_L("Limited Time Items"), [new UnlockLinkId(568)], DateTime.MaxValue)
     ];
     private readonly QuestController _questController = questController;
 
@@ -93,20 +86,7 @@ internal sealed class EventInfoComponent
                 if (startableQuests.Contains(questId) &&
                     _questRegistry.TryGetQuest(questId, out Quest? quest))
                 {
-                    if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Play))
-                    {
-                        _questController.SetNextQuest(quest);
-                        _questController.Start(_L("SeasonalEventSelection"));
-                    }
-
-                    bool hovered = ImGui.IsItemHovered();
-
-                    ImGui.SameLine();
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.Text(questName);
-                    hovered |= ImGui.IsItemHovered();
-
-                    if (hovered)
+                    if (ImGuiComponentsLocal.QuestNotice(_questController, quest))
                         _questTooltipComponent.Draw(quest.Info);
                 }
                 else

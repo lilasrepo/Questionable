@@ -1,12 +1,8 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
 using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Microsoft.Extensions.Logging;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 
 namespace Questionable.Controller.Steps.Shared;
 

@@ -4,7 +4,7 @@
     "JerryWester",
     "Kiarra"
   ],
-  "LastChecked": {"Username": "goopy_brain", "Date": "2026-06-19"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-26"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -18,12 +18,7 @@
           },
           "TerritoryId": 156,
           "InteractionType": "AcceptQuest",
-          "AetheryteShortcut": "Mor Dhona",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "AetheryteShortcut": "Mor Dhona"
         }
       ]
     },

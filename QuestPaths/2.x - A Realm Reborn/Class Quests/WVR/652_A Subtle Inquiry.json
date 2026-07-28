@@ -1,7 +1,8 @@
-{
+﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Gezah",
   "Comment": "Crafted Item:\n 1x Woolen Tights HQ\nAutocraft requires:\n 2x Undyed Woolen Cloth,\n 1x Woolen Yarn",
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-07-11"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -70,7 +71,11 @@
             "Z": 98.924194
           },
           "TerritoryId": 131,
-          "InteractionType": "CompleteQuest"
+          "InteractionType": "CompleteQuest",
+          "AethernetShortcut": [
+            "[Ul'dah] Aetheryte Plaza",
+            "[Ul'dah] Weavers' Guild"
+          ]
         }
       ]
     }

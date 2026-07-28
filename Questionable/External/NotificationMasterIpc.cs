@@ -1,3 +1,5 @@
+﻿﻿using NotificationMasterAPI;
+
 namespace Questionable.External;
 
 // B1: the NotificationMasterAPI NuGet (the IPC-client wrapper) is unavailable on the TC

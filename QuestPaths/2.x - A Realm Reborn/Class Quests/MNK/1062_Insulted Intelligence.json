@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "plogon_enjoyer",
-  "LastChecked": {"Username": "goopy_brain", "Date": "2026-06-17"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-26"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -21,9 +22,6 @@
                 130,
                 131
               ]
-            },
-            "AethernetShortcutIf": {
-              "InSameTerritory": true
             }
           }
         },

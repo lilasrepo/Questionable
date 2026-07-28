@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "JerryWester",
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-21"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-13"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -25,6 +25,18 @@
           "InteractionType": "AttuneAetheryte",
           "Aetheryte": "South Shroud - Quarrymill",
           "TerritoryId": 153
+        },
+        {
+          "$": "Unlock Quarrymill taxi",
+          "DataId": 1002982,
+          "Position": {
+            "X": 172.47266,
+            "Y": 8.362776,
+            "Z": -47.470886
+          },
+          "TerritoryId": 153,
+          "InteractionType": "UnlockTaxiStand",
+          "TaxiStandId": 1179653
         },
         {
           "DataId": 1003272,

@@ -1,4 +1,4 @@
-# Auto-learned walkback paths — see SKILL.md.
+﻿# Auto-learned walkback paths — see SKILL.md.
 # Auto-promoted by plugin_update on 2026-06-01
 Questionable/Questionable.csproj
 Questionable/Questionable.json
@@ -10,7 +10,11 @@ Questionable/Questionable.json
 #   GetValueOrDefault<TripleTriadCard>. Carries upstream's TripleTriadCardRewards property too.
 # - ItemReward.cs: ItemAction lacks .Action on API12; Mount/Minion/Fashion via .Type, Orchestrion/
 #   TripleTriad via AdditionalData typed lookup.
+# Repointed 2026-07-29: upstream moved QuestInfo/ItemReward from Questionable.Model to
+# Questionable.Domain. The old Model/* pins went stale -- re-applying them produced CS0104
+# duplicates against the new Domain types, and dropping them silently took the TempQuest
+# load-crash fix with them. Pins now track the new paths.
 # See FORWARD_PORT_REFERENCE.md Questionable entry.
 Questionable/Utils/LocalizeShortcut.cs
-Questionable/Model/QuestInfo.cs
-Questionable/Model/ItemReward.cs
+Questionable/Domain/QuestInfo.cs
+Questionable/Domain/ItemReward.cs

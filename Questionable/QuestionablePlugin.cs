@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
@@ -14,7 +14,11 @@ using Questionable.Controller.CombatModules;
 using Questionable.Controller.GameUi;
 using Questionable.Controller.NavigationOverrides;
 using Questionable.Controller.Steps;
+using PunishLib;
+using Questionable.AutoGen;
+using Questionable.AutoGen.Generation;
 using Questionable.Controller.Steps.Common;
+using Questionable.Controller.Steps.Fishing;
 using Questionable.Controller.Steps.Gathering;
 using Questionable.Controller.Steps.Interactions;
 using Questionable.Controller.Steps.Movement;
@@ -34,7 +38,9 @@ using Questionable.Windows.JournalComponents;
 using Questionable.Windows.QuestComponents;
 using Questionable.Windows.Utils;
 using static Questionable.Utils.LocalizeShortcut;
-using Action = Questionable.Controller.Steps.Interactions.Action;
+using Action = Questionable.Controller.Steps.Interactions.ActionStep;
+using WrathCombo.API;
+using WrathError = WrathCombo.API.WrathIPCWrapper.ErrorType;
 
 namespace Questionable;
 
@@ -63,8 +69,12 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         ArgumentNullException.ThrowIfNull(pluginInterface);
         ArgumentNullException.ThrowIfNull(chatGui);
         ECommonsMain.Init(pluginInterface, this, Module.DalamudReflector);
-        // B1: WrathIPCWrapper.Init removed (WrathCombo.API NuGet is API15-only).
-        // B1: PunishLibMain.Init removed (PunishLib About-tab dep dropped on TC).
+        WrathIPCWrapper.Init(pluginInterface, WrathError.IPCNotReady | WrathError.Unexpected);
+        PunishLibMain.Init(pluginInterface, "Questionable", new AboutPlugin()
+        {
+            Developer = "alydev",
+            Sponsor = "https://github.com/sponsors/alydevs"
+        });
 
         try
         {
@@ -93,15 +103,24 @@ public sealed class QuestionablePlugin : IDalamudPlugin
             serviceCollection.AddSingleton(new WindowSystem(nameof(Questionable)));
 
             var savedConfig = (Configuration?)pluginInterface.GetPluginConfig();
-            if (savedConfig != null && savedConfig?.Version != Configuration.PluginConfigVersion)
+            if (savedConfig != null && savedConfig.Version != Configuration.PluginConfigVersion)
             {
                 // Backup config when version changes
-                pluginInterface.ConfigFile.CopyTo(Path.ChangeExtension(pluginInterface.ConfigFile.FullName, ".json.bak"), true);
-                savedConfig?.Version = Configuration.PluginConfigVersion;
+                pluginInterface.ConfigFile.CopyTo(Path.ChangeExtension(pluginInterface.ConfigFile.FullName, ".json.bak"), overwrite: true);
+                savedConfig.Version = Configuration.PluginConfigVersion;
             }
+
             var configuration = savedConfig ?? new Configuration();
+            if (!configuration.AutoRedeemOffResetApplied)
+            {
+                configuration.ApplyAutoRedeemRewardItemsInitialReset();
+                configuration.AutoRedeemOffResetApplied = true;
+                pluginInterface.SavePluginConfig(configuration);
+            }
+
             serviceCollection.AddSingleton(configuration);
             Questionable.Utils.LocalizeShortcut.Initialize(configuration);
+            Windows.Common.Ui.QstTheme.Initialize(configuration);
 
             AddBasicFunctionsAndData(serviceCollection);
             AddTaskFactories(serviceCollection);
@@ -111,6 +130,8 @@ public sealed class QuestionablePlugin : IDalamudPlugin
 
             serviceCollection.AddSingleton<CommandHandler>();
             serviceCollection.AddSingleton<DalamudInitializer>();
+
+            serviceCollection.AddSingleton<IFishingPresetGenerator, FishingPresetGenerator>();
 
             _serviceProvider = serviceCollection.BuildServiceProvider();
             Initialize(_serviceProvider);
@@ -137,8 +158,8 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<ChatFunctions>();
         serviceCollection.AddSingleton<QuestFunctions>();
         serviceCollection.AddSingleton<AlliedSocietyQuestFunctions>();
-        serviceCollection.AddSingleton<IGameGuiAdapter, LLibGameGuiAdapter>();
-        serviceCollection.AddSingleton<Mount.MountEvaluator>();
+        serviceCollection.AddSingleton<IGameGuiAdapter, GameGuiAdapter>();
+        serviceCollection.AddSingleton<MountStep.MountEvaluator>();
 
         serviceCollection.AddSingleton<AetherCurrentData>();
         serviceCollection.AddSingleton<AetheryteData>();
@@ -150,6 +171,7 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<NavmeshIpc>();
         serviceCollection.AddSingleton<LifestreamIpc>();
         serviceCollection.AddSingleton<ArtisanIpc>();
+        serviceCollection.AddSingleton<IAutoHookIpc, AutoHookIpc>();
         serviceCollection.AddSingleton<QuestionableIpc>();
         serviceCollection.AddSingleton<TextAdvanceIpc>();
         serviceCollection.AddSingleton<NotificationMasterIpc>();
@@ -159,8 +181,17 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<PandorasBoxIpc>();
         serviceCollection.AddSingleton<YesAlreadyIpc>();
         serviceCollection.AddSingleton<StylistIpc>();
+        serviceCollection.AddSingleton<MogmailIpc>();
+        serviceCollection.AddSingleton<RotationSolverRebornIpc>();
 
         serviceCollection.AddSingleton<GearStatsCalculator>();
+
+        // Questpath auto-generation (Questionable/AutoGen): reads game data through Dalamud's Lumina
+        // instance, which QuestGameData borrows without disposing.
+        serviceCollection.AddSingleton(sp =>
+            new QuestGameData(sp.GetRequiredService<IDataManager>().GameData));
+        serviceCollection.AddSingleton<QuestPathGeneratorFactory>();
+        serviceCollection.AddSingleton<DraftQuestPathService>();
     }
 
     private static void AddTaskFactories(ServiceCollection serviceCollection)
@@ -168,8 +199,13 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         // individual tasks
         serviceCollection.AddTaskFactory<QuestCleanUp.CheckAlliedSocietyMount>();
         serviceCollection.AddTaskFactoryAndExecutor<QuestCleanUp.CloseGatheringAddonTask, QuestCleanUp.CloseGatheringAddonFactory, QuestCleanUp.DoCloseAddon>();
+        serviceCollection.AddTaskExecutor<AbandonQuest.Task, AbandonQuest.AbandonQuestExecutor>();
+        serviceCollection.AddTaskExecutor<LogQuestCompletion.Task, LogQuestCompletion.LogQuestCompletionExecutor>();
         serviceCollection
             .AddTaskExecutor<MoveToLandingLocation.Task, MoveToLandingLocation.MoveToLandingLocationExecutor>();
+        //serviceCollection.AddTaskFactoryAndExecutor<Mail.ClaimMailTask, Mail.Factory, Mail.ClaimMailExecutor>();
+        serviceCollection
+            .AddTaskFactoryAndExecutor<SkipCondition.SkipTask, SkipCondition.Factory, SkipCondition.CheckSkip>();
         serviceCollection
             .AddTaskFactoryAndExecutor<RedeemRewardItems.Task, RedeemRewardItems.Factory, RedeemRewardItems.Executor>();
         serviceCollection.AddTaskExecutor<DoGather.Task, DoGather.GatherExecutor>();
@@ -180,10 +216,8 @@ public sealed class QuestionablePlugin : IDalamudPlugin
             CreateGearset.CreateGearsetExecutor>();
         serviceCollection.AddTaskFactoryAndExecutor<UpdateGearset.Task, UpdateGearset.Factory,
             UpdateGearset.UpdateGearsetExecutor>();
-        serviceCollection.AddTaskExecutor<Mount.MountTask, Mount.MountExecutor>();
-        serviceCollection.AddTaskExecutor<Mount.UnmountTask, Mount.UnmountExecutor>();
-        serviceCollection.AddTaskExecutor<AbandonQuest.Task, AbandonQuest.AbandonQuestExecutor>();
-        serviceCollection.AddTaskExecutor<LogQuestCompletion.Task, LogQuestCompletion.LogQuestCompletionExecutor>();
+        serviceCollection.AddTaskExecutor<MountStep.MountTask, MountStep.MountExecutor>();
+        serviceCollection.AddTaskExecutor<MountStep.UnmountTask, MountStep.UnmountExecutor>();
 
         // task factories
         serviceCollection
@@ -197,8 +231,6 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection
             .AddTaskExecutor<AetheryteShortcut.MoveAwayFromAetheryte,
                 AetheryteShortcut.MoveAwayFromAetheryteExecutor>();
-        serviceCollection
-            .AddTaskFactoryAndExecutor<SkipCondition.SkipTask, SkipCondition.Factory, SkipCondition.CheckSkip>();
         serviceCollection.AddTaskFactoryAndExecutor<Gather.GatheringTask, Gather.Factory, Gather.StartGathering>();
         serviceCollection.AddTaskExecutor<Gather.DelayedGatheringTask, Gather.DelayedGatheringExecutor>();
         serviceCollection
@@ -230,9 +262,9 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddTaskFactory<Emote.Factory>();
         serviceCollection.AddTaskExecutor<Emote.UseOnObject, Emote.UseOnObjectExecutor>();
         serviceCollection.AddTaskExecutor<Emote.UseOnSelf, Emote.UseOnSelfExecutor>();
-        serviceCollection.AddTaskFactoryAndExecutor<Action.UseOnObject, Action.Factory, Action.UseOnObjectExecutor>();
-        serviceCollection.AddTaskExecutor<Action.UseMudraOnObject, Action.UseMudraOnObjectExecutor>();
-        serviceCollection.AddTaskExecutor<Action.TriggerStatusIfMissing, Action.TriggerStatusIfMissingExecutor>();
+        serviceCollection.AddTaskFactoryAndExecutor<ActionStep.UseOnObject, ActionStep.Factory, ActionStep.UseOnObjectExecutor>();
+        serviceCollection.AddTaskExecutor<ActionStep.UseMudraOnObject, ActionStep.UseMudraOnObjectExecutor>();
+        serviceCollection.AddTaskExecutor<ActionStep.TriggerStatusIfMissing, ActionStep.TriggerStatusIfMissingExecutor>();
         serviceCollection.AddTaskFactoryAndExecutor<StatusOff.Task, StatusOff.Factory, StatusOff.DoStatusOff>();
         serviceCollection.AddTaskFactoryAndExecutor<Interact.Task, Interact.Factory, Interact.DoInteract>();
         serviceCollection.AddTaskFactory<Jump.Factory>();
@@ -251,11 +283,13 @@ public sealed class QuestionablePlugin : IDalamudPlugin
             .AddTaskFactoryAndExecutor<EquipRecommended.EquipTask, EquipRecommended.Factory,
                 EquipRecommended.DoEquipRecommended>();
         serviceCollection.AddTaskFactoryAndExecutor<Craft.CraftTask, Craft.Factory, Craft.DoCraft>();
+        serviceCollection.AddTaskFactoryAndExecutor<Fish.FishTask, Fish.Factory, Fish.DoFish>();
         serviceCollection
             .AddTaskFactoryAndExecutor<TurnInDelivery.Task, TurnInDelivery.Factory,
                 TurnInDelivery.SatisfactionSupplyTurnIn>();
 
         serviceCollection.AddTaskFactory<SinglePlayerDuty.Factory>();
+        serviceCollection.AddTaskExecutor<SinglePlayerDuty.LeaveParty, SinglePlayerDuty.LeavePartyExecutor>();
         serviceCollection
             .AddTaskExecutor<SinglePlayerDuty.StartSinglePlayerDuty, SinglePlayerDuty.StartSinglePlayerDutyExecutor>();
         serviceCollection.AddTaskExecutor<SinglePlayerDuty.EnableAi, SinglePlayerDuty.EnableAiExecutor>();
@@ -357,6 +391,10 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<QuestValidationWindow>();
         serviceCollection.AddSingleton<JournalProgressWindow>();
         serviceCollection.AddSingleton<PriorityWindow>();
+        serviceCollection.AddSingleton<Windows.PathEditorComponents.PathEditorSession>();
+        serviceCollection.AddSingleton<Windows.PathEditorComponents.StepFormComponent>();
+        serviceCollection.AddSingleton<Windows.PathEditorComponents.StepCaptureComponent>();
+        serviceCollection.AddSingleton<PathEditorWindow>();
 
         serviceCollection.AddSingleton<GeneralConfigComponent>();
         serviceCollection.AddSingleton<PluginConfigComponent>();
@@ -379,7 +417,8 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         serviceCollection.AddSingleton<IAetheryteTerritoryProvider>(sp => sp.GetRequiredService<AetheryteData>());
         serviceCollection.AddSingleton<IQuestValidator, AcceptQuestTerritoryValidator>();
         serviceCollection.AddSingleton<IQuestValidator, DialogueChoiceValidator>();
-        serviceCollection.AddSingleton<IQuestValidator, ClassQuestShouldHaveShortcutValidator>();
+        // Superseded by AcceptQuestTerritoryValidator
+        //serviceCollection.AddSingleton<IQuestValidator, ClassQuestShouldHaveShortcutValidator>();
         serviceCollection.AddSingleton<IQuestValidator, SinglePlayerInstanceValidator>();
         serviceCollection.AddSingleton<IQuestValidator, UniqueSinglePlayerInstanceValidator>();
         serviceCollection.AddSingleton<IQuestValidator, SayValidator>();

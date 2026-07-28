@@ -1,20 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller.Steps;
 using Questionable.Controller.Steps.Interactions;
 using Questionable.Controller.Steps.Shared;
-using Questionable.Data;
-using Questionable.Functions;
 using Questionable.Model.Questing;
-using Mount = Questionable.Controller.Steps.Common.Mount;
+using static Questionable.Controller.Steps.ITaskExecutor;
+using MountStep = Questionable.Controller.Steps.Common.MountStep;
 
 namespace Questionable.Controller;
 
@@ -64,11 +56,9 @@ internal abstract class MiniTaskController<T> : IDisposable
                         _taskQueue.CurrentTaskExecutor = taskExecutor;
                         return;
                     }
-                    else
-                    {
-                        _logger.LogTrace("Task {TaskName} was skipped", upcomingTask.ToString());
-                        return;
-                    }
+
+                    _logger.LogTrace("Task {TaskName} was skipped", upcomingTask.ToString());
+                    return;
                 }
                 catch (Exception e)
                 {
@@ -79,8 +69,8 @@ internal abstract class MiniTaskController<T> : IDisposable
                     return;
                 }
             }
-            else
-                return;
+
+            return;
         }
 
         ETaskResult result;
@@ -193,9 +183,9 @@ internal abstract class MiniTaskController<T> : IDisposable
         {
             List<ITask> tasks = [];
             if (_condition[ConditionFlag.Mounted])
-                tasks.Add(new Mount.UnmountTask());
+                tasks.Add(new MountStep.UnmountTask());
 
-            tasks.Add(Combat.Factory.CreateTask(null, -1, false, EEnemySpawnType.QuestInterruption, [], [], [], null));
+            tasks.Add(Combat.Factory.CreateTask(elementId: null, -1, isLastStep: false, EEnemySpawnType.QuestInterruption, [], [], [], combatItemUse: null));
             tasks.Add(new WaitAtEnd.WaitDelay());
             _taskQueue.InterruptWith(tasks);
         }

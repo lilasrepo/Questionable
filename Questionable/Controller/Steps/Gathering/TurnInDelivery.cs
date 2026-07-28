@@ -1,10 +1,7 @@
-using FFXIVClientStructs.FFXIV.Client.Game;
+﻿using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Microsoft.Extensions.Logging;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Utils;
 using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 namespace Questionable.Controller.Steps.Gathering;
 

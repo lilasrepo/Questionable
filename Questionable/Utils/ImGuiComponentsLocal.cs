@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -15,19 +15,19 @@ internal static class ImGuiComponentsLocal
                    [CallerFilePath] string file = "",
                  [CallerLineNumber] int line = 0)
     {
-        return IconButton(icon, null, null, null, null, file, line, id);
+        return IconButton(icon, defaultColor: null, activeColor: null, hoveredColor: null, size: null, file, line, id);
     }
     internal static bool IconButton(FontAwesomeIcon icon,
                    [CallerFilePath] string file = "",
                  [CallerLineNumber] int line = 0)
     {
-        return IconButton(icon, null, null, null, null, file, line);
+        return IconButton(icon, defaultColor: null, activeColor: null, hoveredColor: null, size: null, file, line);
     }
     internal static bool IconButton(FontAwesomeIcon icon, Vector2 size,
                    [CallerFilePath] string file = "",
                  [CallerLineNumber] int line = 0)
     {
-        return IconButton(icon, null, null, null, size, file, line);
+        return IconButton(icon, defaultColor: null, activeColor: null, hoveredColor: null, size, file, line);
     }
     internal static bool IconButton(FontAwesomeIcon icon,
                                     Vector4? defaultColor,
@@ -51,7 +51,7 @@ internal static class ImGuiComponentsLocal
                            [CallerFilePath] string file = "",
                          [CallerLineNumber] int line = 0)
     {
-        return IconButtonWithText(icon, text, null, null, null, size, file, line);
+        return IconButtonWithText(icon, text, defaultColor: null, activeColor: null, hoveredColor: null, size, file, line);
     }
 
     internal static bool IconButtonWithText(FontAwesomeIcon icon,
@@ -94,53 +94,102 @@ internal static class ImGuiComponentsLocal
         string preview = labels[index];
         if (labelAsPreview)
             preview = label;
-        if (ImGui.BeginCombo($"{(!labelAsPreview ? label : "")}##SearchableCombo:{Path.GetFileName(file)}:{line}", preview, ImGuiComboFlags.HeightLarge))
+        else
         {
-            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-            if (ImGui.IsWindowAppearing())
-                ImGui.SetKeyboardFocusHere();
-            ImGui.InputTextWithHint("##filter", "Search...", ref searchString, 256);
+            var size = ImGui.GetWindowContentRegionMax();
+            ImGui.SetNextItemWidth(size.X / 2);
+        }
+        using var combo = ImRaii.Combo($"{(!labelAsPreview ? label : "")}##SearchableCombo:{Path.GetFileName(file)}:{line}", preview, ImGuiComboFlags.HeightLarge);
+        if (!combo)
+            return false;
 
-            // The option list lives in its own fixed-height scrollable child so the search box above
-            // stays pinned and visible; SetItemDefaultFocus() then scrolls the child, not the popup.
-            int visibleRows = Math.Clamp(labels.Length, 1, 12);
-            var listSize = ImGui.GetContentRegionAvail() with { Y = ImGui.GetTextLineHeightWithSpacing() * visibleRows };
-            using (var child = ImRaii.Child("##searchableComboList", listSize))
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        if (ImGui.IsWindowAppearing())
+            ImGui.SetKeyboardFocusHere();
+        ImGui.InputTextWithHint("##filter", "Search...", ref searchString, 256);
+
+        // The option list lives in its own fixed-height scrollable child so the search box above
+        // stays pinned and visible; SetItemDefaultFocus() then scrolls the child, not the popup.
+        int visibleRows = Math.Clamp(labels.Length, 1, 12);
+        var listSize = ImGui.GetContentRegionAvail() with { Y = ImGui.GetTextLineHeightWithSpacing() * visibleRows };
+        using (var child = ImRaii.Child("##searchableComboList", listSize))
+        {
+            if (child)
             {
-                if (child)
+                for (int i = 0; i < labels.Length; i++)
                 {
-                    for (int i = 0; i < labels.Length; i++)
+                    if (!string.IsNullOrEmpty(searchString) &&
+                        !labels[i].Contains(searchString, StringComparison.CurrentCultureIgnoreCase))
+                        continue;
+                    if (labels[i].StartsWith("##D"))
                     {
-                        if (!string.IsNullOrEmpty(searchString) &&
-                            !labels[i].Contains(searchString, StringComparison.CurrentCultureIgnoreCase))
-                            continue;
-                        if (labels[i].StartsWith("##D"))
-                        {
-                            ImGui.TextDisabled(labels[i].Substring(3));
-                            continue;
-                        }
-                        if (labels[i].StartsWith("##S"))
-                        {
-                            ImGui.Separator();
-                            continue;
-                        }
-
-                        bool isSelected = i == index;
-                        if (ImGui.Selectable(labels[i], isSelected))
-                        {
-                            selected = values[i];
-                            searchString = string.Empty;
-                        }
-
-                        if (isSelected)
-                            ImGui.SetItemDefaultFocus();
+                        ImGui.TextDisabled(labels[i].Substring(3));
+                        continue;
                     }
+                    if (labels[i].StartsWith("##S"))
+                    {
+                        ImGui.Separator();
+                        continue;
+                    }
+
+                    bool isSelected = i == index;
+                    if (ImGui.Selectable(labels[i], isSelected))
+                    {
+                        selected = values[i];
+                        searchString = string.Empty;
+                    }
+
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
                 }
             }
-
-            ImGui.EndCombo();
-            return true;
         }
-        return false;
+
+        return true;
+    }
+
+    public static void HelpMarker(string helpText, string[]? bullets) => HelpMarker(helpText, FontAwesomeIcon.InfoCircle, bullets: bullets);
+
+    public static void HelpMarker(string helpText, FontAwesomeIcon icon, Vector4? color = null, string[]? bullets = null)
+    {
+        // api13: ImRaii.PushColor has no Vector4? overload; use the conditional one instead.
+        using var col = ImRaii.PushColor(ImGuiCol.TextDisabled, color ?? default, color.HasValue);
+
+        ImGui.SameLine();
+
+        using (ImRaii.PushFont(UiBuilder.IconFont))
+        {
+            ImGui.TextDisabled(icon.ToIconString());
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            using (ImRaii.Tooltip())
+            {
+                using (ImRaii.TextWrapPos(ImGui.GetFontSize() * 35.0f))
+                {
+                    ImGui.Text(helpText);
+                    if (bullets != null)
+                        foreach (string point in bullets)
+                            ImGui.BulletText(point);
+                }
+            }
+        }
+    }
+
+    public static bool QuestNotice(QuestController questController, Quest quest, string? label = null)
+    {
+        if (IconButton(FontAwesomeIcon.Play))
+        {
+            questController.SetNextQuest(quest);
+            questController.Start(_L("QuestNotice"));
+        }
+
+        bool hovered = ImGui.IsItemHovered();
+
+        ImGui.SameLine();
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text(label ?? quest.Info.Name);
+        return hovered | ImGui.IsItemHovered();
     }
 }

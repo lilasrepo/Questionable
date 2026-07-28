@@ -1,16 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
-using ECommons.DalamudServices;
-using Microsoft.Extensions.Logging;
-using Questionable.Model;
-using Questionable.Utils;
-using static Questionable.Controller.Steps.Shared.LogQuestCompletion;
 
 namespace Questionable.Controller.Steps.Shared;
 
@@ -100,7 +89,7 @@ internal static class LogQuestCompletion
     }
 
     internal static void ClearQuestCompletions()
-    { 
+    {
         JsonNode? node = JsonSerializer.SerializeToNode(new List<QuestCompletion>(), JsonOptions.Default)!;
         using FileStream writeStream = File.Create(LogPath);
         using Utf8JsonWriter writer = new(writeStream, new()

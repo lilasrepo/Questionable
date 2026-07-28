@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "alydev", "Date": "2026-06-20"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-27"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -9,19 +10,23 @@
         {
           "InteractionType": "EquipItem",
           "ItemId": 1995,
-          "TerritoryId": 133
+          "TerritoryId": 133,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "InteractionType": "CreateGearset",
-          "TerritoryId": 133
+          "TerritoryId": 133,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "InteractionType": "EquipRecommended",
-          "TerritoryId": 133
+          "TerritoryId": 133,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "InteractionType": "UpdateGearset",
-          "TerritoryId": 133
+          "TerritoryId": 133,
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "DataId": 1000692,
@@ -39,7 +44,6 @@
           ],
           "SkipConditions": {
             "AetheryteShortcutIf": {
-              "InSameTerritory": true,
               "InTerritory": [
                 133
               ]

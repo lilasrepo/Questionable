@@ -1,24 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Plugin.Services;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
-using Microsoft.Extensions.Logging;
-using Questionable.Data;
-using Questionable.External;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
 using Questionable.Utils;
 using Dalamud.Game.ClientState.Objects;
-using Quest = Questionable.Model.Quest;
 using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
+using Quest = Questionable.Domain.Quest;
 
 namespace Questionable.Controller.GameUi;
 

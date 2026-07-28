@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Iskierka", "Date": "2026-06-17"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-07-15"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -22,7 +23,6 @@
           ],
           "SkipConditions": {
             "AetheryteShortcutIf": {
-              "InSameTerritory": true,
               "InTerritory": [
                 133
               ]
@@ -93,7 +93,6 @@
           },
           "TerritoryId": 156,
           "InteractionType": "SinglePlayerDuty",
-          "Comment": "Please report in discord whether this solo duty works fine.\nIt has not been tested yet and may fail. Thank you.",
           "SinglePlayerDutyOptions": {"Enabled": true},
           "Mount": false
         }

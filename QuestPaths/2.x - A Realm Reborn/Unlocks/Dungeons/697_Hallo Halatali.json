@@ -1,13 +1,13 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": ["JerryWester", "Friendly"],
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-21"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-25"},
   "QuestSequence": [
     {
       "Sequence": 0,
       "Steps": [
         {
-          "TerritoryId": 128,
+          "TerritoryId": 1,
           "InteractionType": "UseItem",
           "ItemId": 30362,
           "TargetTerritoryId": 140,
@@ -65,9 +65,6 @@
           "InteractionType": "WalkTo",
           "AetheryteShortcut": "Eastern Thanalan - Camp Drybone",
           "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            },
             "StepIf": {
               "Flying": "Unlocked"
             }

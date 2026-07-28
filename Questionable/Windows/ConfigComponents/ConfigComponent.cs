@@ -1,19 +1,15 @@
-using System;
-using System.Collections.Generic;
-using Dalamud.Bindings.ImGui;
+﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.ConfigComponents;
 
 internal abstract class ConfigComponent(IDalamudPluginInterface pluginInterface, Configuration configuration)
 {
-    protected const string DutyClipboardSeparator = ";";
-    protected const string DutyWhitelistPrefix = "+";
-    protected const string DutyBlacklistPrefix = "-";
+    protected const char DutyClipboardSeparator = ';';
+    protected const char DutyWhitelistPrefix = '+';
+    protected const char DutyBlacklistPrefix = '-';
 
     private readonly IDalamudPluginInterface _pluginInterface = pluginInterface;
 
@@ -66,12 +62,12 @@ internal abstract class ConfigComponent(IDalamudPluginInterface pluginInterface,
         if (level == 0)
             return string.Empty;
 
-        return $"{(includePrefix ? SeIconChar.LevelEn.ToIconString() : string.Empty)}{FormatLevel(level / 10, false)}{(SeIconChar.Number0 + level % 10).ToIconChar()}";
+        return $"{(includePrefix ? SeIconChar.LevelEn.ToIconString() : string.Empty)}{FormatLevel(level / 10, includePrefix: false)}{(SeIconChar.Number0 + level % 10).ToIconChar()}";
     }
 
     protected static void DrawNotes(bool enabledByDefault, IEnumerable<string> notes)
     {
-        using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.TextDisabled, !enabledByDefault ? ImGuiColors.DalamudYellow : ImGuiColors.ParsedBlue);
+        using ImRaii.Color color = ImRaii.PushColor(ImGuiCol.TextDisabled, !enabledByDefault ? QstTheme.Amber : QstTheme.Info);
 
         ImGui.SameLine();
         using (ImRaii.PushFont(UiBuilder.IconFont))
@@ -87,7 +83,7 @@ internal abstract class ConfigComponent(IDalamudPluginInterface pluginInterface,
 
         using ImRaii.IEndObject _ = ImRaii.Tooltip();
 
-        ImGui.TextColored(ImGuiColors.DalamudYellow,
+        ImGui.TextColored(QstTheme.Amber,
             _L("While testing, the following issues have been found:"));
         foreach (string note in notes)
             ImGui.BulletText(note);

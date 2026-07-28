@@ -1,16 +1,5 @@
-using System;
-using System.IO;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller;
-using Questionable.Model;
-using static Questionable.Utils.LocalizeShortcut;
 
 namespace Questionable.PathData;
 
@@ -188,11 +177,9 @@ internal sealed class PathDataUpdater : IDisposable
                 Save();
                 return;
             }
-            else
-            {
-                Status = _L("Path data from previous run missing, downloading path data...");
-                Save();
-            }
+
+            Status = _L("Path data from previous run missing, downloading path data...");
+            Save();
         }
 
         if (string.IsNullOrEmpty(manifest.BundleUrl))

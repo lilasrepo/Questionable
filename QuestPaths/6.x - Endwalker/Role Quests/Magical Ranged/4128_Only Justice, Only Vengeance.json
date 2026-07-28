@@ -15,6 +15,7 @@
           "TerritoryId": 418,
           "InteractionType": "Interact",
           "AetheryteShortcut": "Ishgard",
+          "TargetTerritoryId": 1001,
           "AethernetShortcut": [
             "[Ishgard] Aetheryte Plaza",
             "[Ishgard] The Forgotten Knight"
@@ -28,7 +29,6 @@
           ],
           "SkipConditions": {
             "AetheryteShortcutIf": {
-              "InSameTerritory": true,
               "InTerritory": [
                 1001
               ]

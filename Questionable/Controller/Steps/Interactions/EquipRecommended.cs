@@ -1,13 +1,9 @@
-﻿using System;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Plugin.Services;
-using ECommons.DalamudServices;
+﻿using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.Interop;
-using Questionable.External;
-using Questionable.Model;
+using Questionable.Model.Common;
 using Questionable.Model.Questing;
 namespace Questionable.Controller.Steps.Interactions;
 
@@ -53,18 +49,18 @@ internal static class EquipRecommended
             if (condition[ConditionFlag.InCombat])
                 return false;
 
-            if (!StylistIpc.IsInstalled && config.General.GearsetUpdateSource is Configuration.EGearsetUpdateSource.Stylist)
+            if (!StylistIpc.IsInstalled && config.General.GearsetUpdateSource is EGearsetUpdateSource.Stylist)
             {
                 chatGui.Print("You've set Stylist to manage equipped gear, but it is not installed. Resetting to Vanilla.", CommandHandler.MessageTag, CommandHandler.TagColor);
-                config.General.GearsetUpdateSource = Configuration.EGearsetUpdateSource.Vanilla;
+                config.General.GearsetUpdateSource = EGearsetUpdateSource.Vanilla;
                 Svc.PluginInterface.SavePluginConfig(config);
             }
             switch (config.General.GearsetUpdateSource)
             {
-                case Configuration.EGearsetUpdateSource.Vanilla:
+                case EGearsetUpdateSource.Vanilla:
                     RecommendEquipModule.Instance()->SetupForClassJob(PlayerState.Instance()->CurrentClassJobId);
                     break;
-                case Configuration.EGearsetUpdateSource.Stylist:
+                case EGearsetUpdateSource.Stylist:
                     RaptureGearsetModule.Instance()->UpdateGearset(RaptureGearsetModule.Instance()->CurrentGearsetIndex);
                     break;
             }
@@ -76,7 +72,7 @@ internal static class EquipRecommended
         {
             switch (config.General.GearsetUpdateSource)
             {
-                case Configuration.EGearsetUpdateSource.Vanilla:
+                case EGearsetUpdateSource.Vanilla:
                     RecommendEquipModule* recommendedEquipModule = RecommendEquipModule.Instance();
                     if (recommendedEquipModule->IsUpdating)
                         return ETaskResult.StillRunning;
@@ -87,7 +83,7 @@ internal static class EquipRecommended
                         {
                             chatGui.Print("Equipping recommended gear.", CommandHandler.MessageTag, CommandHandler.TagColor);
                             recommendedEquipModule->EquipRecommendedGear();
-                            _continueAt = DateTime.Now.AddSeconds(1);
+                            _continueAt = DateTime.Now.AddSeconds(0.25);
                         }
 
                         _checkedOrTriggeredEquipmentUpdate = true;
@@ -95,15 +91,18 @@ internal static class EquipRecommended
                     }
 
                     break;
-                case Configuration.EGearsetUpdateSource.Stylist:
-                    if (stylist.IsBusy)
-                        return ETaskResult.StillRunning;
-                    else if (!_checkedOrTriggeredEquipmentUpdate)
+                case EGearsetUpdateSource.Stylist:
                     {
-                        stylist.UpdateGearset();
-                        _checkedOrTriggeredEquipmentUpdate = true;
-                        _continueAt = DateTime.Now.AddSeconds(1);
-                        return ETaskResult.StillRunning;
+                        if (stylist.IsBusy)
+                            return ETaskResult.StillRunning;
+
+                        if (!_checkedOrTriggeredEquipmentUpdate)
+                        {
+                            stylist.UpdateGearset();
+                            _checkedOrTriggeredEquipmentUpdate = true;
+                            _continueAt = DateTime.Now.AddSeconds(0.25);
+                            return ETaskResult.StillRunning;
+                        }
                     }
 
                     break;

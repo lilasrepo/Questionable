@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "pot0to",
-  "LastChecked": {"Username": "alydev", "Date": "2026-06-20"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-27"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -20,12 +21,7 @@
           "AethernetShortcut": [
             "[Gridania] Aetheryte Plaza",
             "[Gridania] Archers' Guild"
-          ],
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          ]
         }
       ]
     },
@@ -274,11 +270,6 @@
             "[Gridania] Aetheryte Plaza",
             "[Gridania] Archers' Guild"
           ],
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          },
           "NextQuestId": 134
         }
       ]

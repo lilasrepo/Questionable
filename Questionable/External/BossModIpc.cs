@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
-using Dalamud.Plugin.Services;
-using Questionable.Data;
 using Questionable.Model.Questing;
-using static Questionable.Utils.LocalizeShortcut;
+using static Questionable.External.IPCUtils;
 namespace Questionable.External;
 
 internal sealed class BossModIpc
@@ -44,8 +38,15 @@ internal sealed class BossModIpc
 
     private bool _soloDutyZoneConfigured;
     private bool _enableQuestBattlesOverridden;
+    private bool _bossmodRebornDetected;
 
-    public bool IsSupported() => IpcInvoke.SafeFunc(() => _getPreset.HasFunction, false);
+    public bool IsSupported() => IpcInvoke.SafeFunc(() => _getPreset.HasFunction, fallback: false);
+    public bool BossModRebornDetected()
+    {
+        if (EzThrottler.Throttle("BossModRebornDetected", miliseconds: 1000))
+            _bossmodRebornDetected = IPCSubscriber.IsInstalled("BossModReborn");
+        return _bossmodRebornDetected;
+    }
 
     public PresetDefinition AddPreset(EPreset preset) => AddPreset(PresetDefinitions[preset]);
     public PresetDefinition AddPreset(PresetDefinition definition)
@@ -126,7 +127,7 @@ internal sealed class BossModIpc
 
         bool? enableQuestBattles = TryGetEnableQuestBattles();
         if (enableQuestBattles is not true)
-            SetEnableQuestBattles(true);
+            SetEnableQuestBattles(enabled: true);
         _enableQuestBattlesOverridden = enableQuestBattles == false;
     }
 
@@ -134,7 +135,7 @@ internal sealed class BossModIpc
     {
         if (_enableQuestBattlesOverridden)
         {
-            SetEnableQuestBattles(false);
+            SetEnableQuestBattles(enabled: false);
             _enableQuestBattlesOverridden = false;
         }
 
@@ -154,7 +155,7 @@ internal sealed class BossModIpc
                 return (bool?)null;
 
             return bool.TryParse(result[0], out bool value) ? value : null;
-        }, null);
+        }, fallback: null);
     }
 
     private void SetEnableQuestBattles(bool enabled) =>
@@ -193,7 +194,7 @@ internal sealed class BossModIpc
             Stream stream =
                 typeof(BossModIpc).Assembly.GetManifestResourceStream(
                     $"Questionable.Controller.CombatModules.BossModPreset.{name}") ??
-                throw new InvalidOperationException(_LF("Preset {0} was not found",name));
+                throw new InvalidOperationException(_LF("Preset {0} was not found", name));
             using StreamReader reader = new(stream);
             return reader.ReadToEnd();
         }

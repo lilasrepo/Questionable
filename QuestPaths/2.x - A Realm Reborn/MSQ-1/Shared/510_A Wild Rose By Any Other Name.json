@@ -1,13 +1,13 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-22"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-13"},
   "QuestSequence": [
     {
       "Sequence": 0,
       "Steps": [
         {
-          "TerritoryId": 128,
+          "TerritoryId": 1,
           "InteractionType": "UseItem",
           "ItemId": 30362,
           "TargetTerritoryId": 140,
@@ -172,6 +172,19 @@
           "TerritoryId": 141,
           "InteractionType": "WalkTo",
           "AetheryteShortcut": "Central Thanalan - Black Brush Station"
+        },
+        {
+          "Comment": "Detour to unlock Northern Thanalan for job quests",
+          "$": "Camp Bluefog taxi",
+          "DataId": 1004152,
+          "Position": {
+            "X": 54.947754,
+            "Y": 4,
+            "Z": 443.22876
+          },
+          "TerritoryId": 147,
+          "InteractionType": "UnlockTaxiStand",
+          "TaxiStandId": 1179666
         },
         {
           "Comment": "Detour to unlock Northern Thanalan for job quests",

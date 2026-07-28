@@ -1,19 +1,11 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
-using Questionable.Controller;
-using Questionable.Controller.Utils;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Windows;
 
 internal sealed class DebugOverlay : Window
@@ -34,7 +26,7 @@ internal sealed class DebugOverlay : Window
         CombatController combatController, Configuration configuration, HighlightObject highlightObject)
         : base(_L("Questionable Debug Overlay") + "###QuestionableDebugOverlay",
             ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground |
-            ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings, true)
+            ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings, forceMainWindow: true)
     {
         _questController = questController;
         _questRegistry = questRegistry;
@@ -140,7 +132,7 @@ internal sealed class DebugOverlay : Window
 
         ImGui.GetWindowDrawList().AddCircleFilled(screenPos, 3f, color);
         ImGui.GetWindowDrawList().AddText(screenPos + new Vector2(10, -8), color,
-            $"{counter}: {step.InteractionType} {step.DataId ?? '-'}\n{position.ToString("G", CultureInfo.InvariantCulture)} [{(position - _objectTable[0]!.Position).Length():N2}]\n{step.Comment}");
+            $"{counter}: {step.InteractionType} {step.DataId ?? '-'}\n{position.ToString("G5", CultureInfo.InvariantCulture)} [{(position - _objectTable[0]!.Position).Length():N2}]\n{step.Comment}");
     }
 
     private void DrawCombatTargets()
@@ -170,20 +162,20 @@ internal sealed class DebugOverlay : Window
             position = step.Position;
             return true;
         }
-        else if (step is { InteractionType: EInteractionType.AttuneAetheryte or EInteractionType.RegisterFreeOrFavoredAetheryte, Aetheryte: { } aetheryteLocation })
+
+        if (step is { InteractionType: EInteractionType.AttuneAetheryte or EInteractionType.RegisterFreeOrFavoredAetheryte, Aetheryte: { } aetheryteLocation })
         {
             position = _aetheryteData.Locations[aetheryteLocation];
             return true;
         }
-        else if (step is { InteractionType: EInteractionType.AttuneAethernetShard, AethernetShard: { } aethernetShard })
+
+        if (step is { InteractionType: EInteractionType.AttuneAethernetShard, AethernetShard: { } aethernetShard })
         {
             position = _aetheryteData.Locations[aethernetShard];
             return true;
         }
-        else
-        {
-            position = null;
-            return false;
-        }
+
+        position = null;
+        return false;
     }
 }

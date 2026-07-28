@@ -14,12 +14,7 @@
           },
           "TerritoryId": 130,
           "InteractionType": "AcceptQuest",
-          "AetheryteShortcut": "Ul'dah",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "AetheryteShortcut": "Ul'dah"
         }
       ]
     },
@@ -28,7 +23,7 @@
       "Steps": [
         {
           "Comment": "Clearing normal unlock quest",
-          "TerritoryId": 128,
+          "TerritoryId": 1,
           "InteractionType": "UseItem",
           "ItemId": 30362,
           "TargetTerritoryId": 140,
@@ -74,7 +69,6 @@
           "SkipConditions": {
             "AetheryteShortcutIf": {
               "AetheryteLocked": "Mor Dhona",
-              "InSameTerritory": true,
               "InTerritory": [155]
             },
             "StepIf": {
@@ -109,12 +103,7 @@
           "TerritoryId": 155,
           "InteractionType": "Interact",
           "AetheryteShortcut": "Coerthas Central Highlands - Camp Dragonhead",
-          "Fly": true,
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          }
+          "Fly": true
         }
       ]
     },

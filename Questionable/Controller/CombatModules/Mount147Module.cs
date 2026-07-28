@@ -1,5 +1,4 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
-using Questionable.Functions;
 using Questionable.Model.Questing;
 namespace Questionable.Controller.CombatModules;
 
@@ -21,7 +20,7 @@ internal sealed class Mount147Module(GameFunctions gameFunctions) : ICombatModul
     {
         foreach (EAction action in _actions)
         {
-            if (gameFunctions.UseAction(gameObject, action, false))
+            if (gameFunctions.UseAction(gameObject, action, checkCanUse: false))
                 return;
         }
     }

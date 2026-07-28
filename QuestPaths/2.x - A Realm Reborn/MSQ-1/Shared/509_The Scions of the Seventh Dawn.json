@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-23"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-13"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -50,6 +50,18 @@
           "InteractionType": "WalkTo",
           "$": "Vesper Bay Gate",
           "DisableNavmesh": true
+        },
+        {
+          "$": "Unlock Vesper Bay taxi",
+          "DataId": 1004036,
+          "Position": {
+            "X": -415.7931,
+            "Y": 23.11398,
+            "Z": -335.71375
+          },
+          "TerritoryId": 140,
+          "InteractionType": "UnlockTaxiStand",
+          "TaxiStandId": 1179660
         },
         {
           "DataId": 1004603,

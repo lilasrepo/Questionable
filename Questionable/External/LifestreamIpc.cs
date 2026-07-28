@@ -1,7 +1,4 @@
-﻿using System;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Ipc;
-using Microsoft.Extensions.Logging;
+﻿using Dalamud.Plugin.Ipc;
 using Questionable.Model.Common;
 namespace Questionable.External;
 
@@ -20,7 +17,7 @@ internal sealed class LifestreamIpc(IDalamudPluginInterface pluginInterface, ILo
         pluginInterface.GetIpcSubscriber<bool>("Lifestream.IsBusy");
 #pragma warning restore CA1823 // Avoid unused private fields
 
-    public bool IsBusy => IpcInvoke.SafeFunc(() => _isBusy.InvokeFunc(), false);
+    public bool IsBusy => IpcInvoke.SafeFunc(() => _isBusy.InvokeFunc(), fallback: false);
 
     public bool Teleport(string destination)
     {

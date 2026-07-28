@@ -1,27 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
+﻿using System.Text;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Questionable.Controller;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Utils;
 using Questionable.Windows.Common;
-using Questionable.Windows.QuestComponents;
-using Questionable.Windows.Utils;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows;
 
 internal sealed class PriorityWindow : LWindow
@@ -29,7 +14,7 @@ internal sealed class PriorityWindow : LWindow
     private const string ClipboardPrefix = "qst:priority:";
     private const string LegacyClipboardPrefix = "qst:v1:";
     private const char ClipboardSeparator = ';';
-    private string JobQuestsPresetName = _L("Job Quests");
+    private readonly string JobQuestsPresetName = _L("Job Quests");
     private readonly IChatGui _chatGui;
 
     private readonly Configuration _configuration;
@@ -42,6 +27,7 @@ internal sealed class PriorityWindow : LWindow
     private readonly QuestSelector _questSelector;
     private readonly QuestTooltipComponent _questTooltipComponent;
     private readonly UiUtils _uiUtils;
+    private readonly QuestJournalUtils _questJournalUtils;
     private Dictionary<string, List<ElementId>>? _builtInPresets;
     private ElementId? _draggedItem;
     private Job? _lastKnownJob;
@@ -50,7 +36,7 @@ internal sealed class PriorityWindow : LWindow
 
     public PriorityWindow(QuestController questController, QuestFunctions questFunctions, QuestSelector questSelector,
         QuestTooltipComponent questTooltipComponent, UiUtils uiUtils, IChatGui chatGui, QuestRegistry questRegistry,
-        IDalamudPluginInterface pluginInterface, Configuration configuration, QuestData questData)
+        IDalamudPluginInterface pluginInterface, Configuration configuration, QuestData questData, QuestJournalUtils questJournalUtils)
         : base(_L("Priority Quests") + "###QuestionableQuestPriority")
     {
         _questController = questController;
@@ -63,6 +49,7 @@ internal sealed class PriorityWindow : LWindow
         _pluginInterface = pluginInterface;
         _configuration = configuration;
         _questData = questData;
+        _questJournalUtils = questJournalUtils;
 
         _questSelector.SuggestionPredicate = quest =>
             !quest.Info.IsMainScenarioQuest &&
@@ -87,15 +74,15 @@ internal sealed class PriorityWindow : LWindow
             LoadPreset(JobQuestsPresetName);
         _lastKnownJob = currentJob;
 
-        if (ImGui.CollapsingHeader(_L("Explanation")))
+        if (QstWidgets.SectionHeader(_L("Explanation"), "PriorityExplanation", defaultOpen: false))
         {
             ImGui.TextWrapped(
                 _L("Questionable will generally try to do:"));
             ImGui.BulletText(_L("Priority quests added below, in order"));
             ImGui.BulletText(_L("'Priority' quests: class quests, ARR primals, ARR raids"));
             ImGui.BulletText(
-                _L("Supported quests in your 'To-Do list'\n(quests from your Quest Journal that are always on-screen)"));
-            ImGui.BulletText(_L("MSQ quest (if available, unless it is marked as 'ignored'\nin your Journal)"));
+                _L("Supported quests in your 'To-Do list' (quests from your Quest Journal that are always on-screen)"));
+            ImGui.BulletText(_L("MSQ quest (if available, unless it is marked as 'ignored' in your Journal)"));
             ImGui.TextWrapped(
                 _L("If you don't have any active MSQ quest and there is no Priority Quest added here, " +
                 "it will always try to pick up the next quest in the MSQ first."));
@@ -169,6 +156,8 @@ internal sealed class PriorityWindow : LWindow
                 if (hovered)
                     _questTooltipComponent.Draw(quest.Info);
 
+                _questJournalUtils.ShowContextMenu(quest.Info, quest, nameof(PriorityWindow));
+
                 if (priorityQuests.Count > 1)
                 {
                     using (ImRaii.PushFont(UiBuilder.IconFont))
@@ -232,10 +221,10 @@ internal sealed class PriorityWindow : LWindow
             int oldIndex = priorityQuests.IndexOf(draggedItem);
 
             (Vector2 topLeft, Vector2 bottomRight) = itemPositions[oldIndex];
-            ImGui.GetWindowDrawList().AddRect(topLeft, bottomRight, ImGui.GetColorU32(ImGuiColors.DalamudGrey), 3f,
+            ImGui.GetWindowDrawList().AddRect(topLeft, bottomRight, ImGui.GetColorU32(QstTheme.TextMuted), 3f,
                 ImDrawFlags.RoundCornersAll);
 
-            int newIndex = itemPositions.FindIndex(x => ImGui.IsMouseHoveringRect(x.TopLeft, x.BottomRight, true));
+            int newIndex = itemPositions.FindIndex(x => ImGui.IsMouseHoveringRect(x.TopLeft, x.BottomRight, clip: true));
             if (newIndex >= 0 && oldIndex != newIndex)
             {
                 itemToAdd = priorityQuests.Single(x => x.Id == _draggedItem);
@@ -307,7 +296,7 @@ internal sealed class PriorityWindow : LWindow
 
     private void DrawPresets()
     {
-        if (!ImGui.CollapsingHeader(_L("Presets")))
+        if (!QstWidgets.SectionHeader(_L("Presets"), "Presets", defaultOpen: false))
             return;
 
         Dictionary<string, List<ElementId>> builtInPresets = GetOrCreateBuiltInPresets();
@@ -344,9 +333,7 @@ internal sealed class PriorityWindow : LWindow
             ImGui.EndCombo();
         }
 
-        // API12 lacks ImGui.TextColoredWrapped — bridge via PushStyleColor + TextWrapped.
-        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-        ImGui.TextWrapped(_L("Selecting a preset will override your current priority list and activate the preset. " +
+        ImGui.TextColoredWrapped(QstTheme.Danger, _L("Selecting a preset will override your current priority list and activate the preset. " +
             "You can save your current list as a preset by entering a name below and selecting Save."));
         ImGui.PopStyleColor();
 
@@ -388,9 +375,9 @@ internal sealed class PriorityWindow : LWindow
         }
 
         if (nameIsBuiltIn)
-            ImGui.TextColored(ImGuiColors.DalamudRed, _L("Cannot overwrite a built-in preset."));
+            ImGui.TextColored(QstTheme.Danger, _L("Cannot overwrite a built-in preset."));
         else if (nameExists)
-            ImGui.TextColored(ImGuiColors.DalamudYellow, _L("Hold CTRL to overwrite existing preset."));
+            ImGui.TextColored(QstTheme.Amber, _L("Hold CTRL to overwrite existing preset."));
     }
 
     //TODO Add all jobs for all role quests
@@ -414,6 +401,7 @@ internal sealed class PriorityWindow : LWindow
             1432, 1433, 1434, // retainers
             1212, 1213, 1214, // housing districts
             1563, 1564, 1565, // hunts
+            1004, 1005, 1006, // pvp
             4644, // island sanc visit
             3759, // new game+
             5187, // free fantasia
@@ -435,12 +423,57 @@ internal sealed class PriorityWindow : LWindow
             1524, // tamtara hard
             1525, // stone vigil hard
             1526, // hullbreaker isle
-            2248, // hullbreaker hard
+            //2248, // hullbreaker hard requires HW
             1556, // palace of the dead
+            1308, // ultimates
+            705, // ARR relics
+            1007, 1194, 1195, 1196, 1197, 1198, 1412, 1413, 1530, 90, // primal EX
+            1008, 1009, 1012, 433, // urth's fount chain
         ]).FromNumericListOfQuests();
-        _builtInPresets = new()
+        List<ElementId> jobUnlocks = ((ushort[])[
+            // Gridania
+            181,131, // Archer
+            180,132, // Lancer
+            182,133, // Conjurer
+            184,138, // Carpenter
+            188,105, // Leatherworker
+            193,3, // Botanist
+            3261,3262, // Gunbreaker
+            4854,4855, // Pictomancer
+            // Limsa
+            179,310, // Marauder
+            451,452, // Arcanist
+            101,102, // Rogue
+            1134,1107, // Fisher
+            185,291, // Blacksmith
+            186,273, // Armorer
+            191,271, // Culinarian
+            3249,3250, // Dancer
+            3192, // Blue Mage
+            4067,4068, // Sage
+            // Uldah
+            177,285, // Gladiator
+            183,344, // Thaumaturge
+            178,532, // Pugilist
+            187,608, // Goldsmith
+            189,534, // Weaver
+            192,597, // Miner
+            190,575, // Alchemist
+            2559,2560, // Samurai
+            2576,2577, // Red Mage
+            4073,4074, // Reaper
+            4848,4849, // Viper
+            // Ishgard
+            2109,1696, // Machinist
+            2110,2053, // Dark Knight
+            2123,2012 // Astrologian
+        ]).FromNumericListOfQuests();
+        _builtInPresets = new(StringComparer.Ordinal)
         {
             [JobQuestsPresetName] = [],
+            [_L("Unlock all jobs")] = jobUnlocks,
+            [_L("Gil (set TextAdvance to prefer Gil sacks)")] = gilList,
+            [_L("Post-ARR unlocks")] = postARRUnlocks,
             [_L("ARR Hard Mode Primals")] = QuestData.HardModePrimals.Cast<ElementId>().ToList(),
             [_L("Crystal Tower Raids")] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(),
             [_L("Aether Currents: Heavensward")] = GetAetherCurrentQuests(397, 398, 399, 400, 401),
@@ -453,8 +486,6 @@ internal sealed class PriorityWindow : LWindow
             [_L("Role Quests: Melee DPS")] = _questData.GetRoleQuests(Job.MNK).Select(x => x.QuestId).ToList(),
             [_L("Role Quests: Physical Ranged")] = _questData.GetRoleQuests(Job.BRD).Select(x => x.QuestId).ToList(),
             [_L("Role Quests: Caster")] = _questData.GetRoleQuests(Job.BLM).Select(x => x.QuestId).ToList(),
-            [_L("Gil (set TextAdvance to prefer Gil sacks)")] = gilList,
-            [_L("Post-ARR unlocks")] = postARRUnlocks,
         };
 
         return _builtInPresets;
@@ -513,7 +544,7 @@ internal sealed class PriorityWindow : LWindow
         if (currentJob == Job.ADV)
             return [];
 
-        return _questRegistry.GetKnownClassJobQuests(currentJob, false)
+        return _questRegistry.GetKnownClassJobQuests(currentJob, includeRoleQuests: false)
             .Select(x => x.QuestId)
             .ToList();
     }

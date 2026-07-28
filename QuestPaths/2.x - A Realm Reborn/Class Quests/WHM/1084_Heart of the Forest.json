@@ -1,7 +1,8 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Cacahuetes",
-  "LastChecked": {"Username": "goopy_brain", "Date": "2026-06-17"},
+  "Interruptible": false,
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-06-19"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -78,7 +79,6 @@
           },
           "TerritoryId": 148,
           "InteractionType": "SinglePlayerDuty",
-          "Comment": "Please report in discord whether this solo duty works fine.\nIt has not been tested yet and may fail. Thank you.",
           "SinglePlayerDutyOptions": {"Enabled": true},
           "AetheryteShortcut": "Central Shroud - Bentbranch Meadows",
           "Fly": true

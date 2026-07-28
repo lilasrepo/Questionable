@@ -1,4 +1,5 @@
-﻿{
+{
+  "DalamudApiLevel": 13,
   "Name": "Questionable IPC Test",
   "Author": "Liza Carvelli",
   "Punchline": "[Questionable dev plugin]: IPC Tester.",

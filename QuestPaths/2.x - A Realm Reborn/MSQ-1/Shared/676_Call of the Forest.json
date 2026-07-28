@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Remu", "Date": "2026-06-23"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-13"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -51,7 +51,7 @@
           "TerritoryId": 128,
           "InteractionType": "Interact",
           "TargetTerritoryId": 132,
-          "SkipConditions": {"StepIf": {"NotInTerritory": [128]}},
+          "SkipConditions": {"StepIf": {"InTerritory": [132]}},
           "DialogueChoices": [
             {
               "Type": "List",

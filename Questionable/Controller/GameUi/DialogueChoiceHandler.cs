@@ -1,22 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Game.Addon.Lifecycle;
+﻿using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Plugin.Services;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using Microsoft.Extensions.Logging;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Common;
 using Questionable.Model.Questing;
 using Questionable.Utils;
 using Dalamud.Game.ClientState.Objects;
-using Quest = Questionable.Model.Quest;
+using Quest = Questionable.Domain.Quest;
 
 namespace Questionable.Controller.GameUi;
 
@@ -24,6 +16,8 @@ namespace Questionable.Controller.GameUi;
 ///     Handles the in-game "SelectString", "CutSceneSelectString" and "SelectIconString" addons —
 ///     picking the list entry that matches the current quest's dialogue choices.
 /// </summary>
+// TODO: refactor — heavy nesting (22 lines indented ≥6 levels, max indent 16 levels).
+//       High max indent likely reflects LINQ / method-chain continuations rather than control flow; verify before restructuring.
 internal sealed class DialogueChoiceHandler : IDisposable
 {
     private readonly IAddonLifecycle _addonLifecycle;
@@ -509,7 +503,7 @@ internal sealed class DialogueChoiceHandler : IDisposable
 
     private int? HandleInstanceListChoice(string? actualPrompt)
     {
-        string? expectedPrompt = _excelFunctions.GetDialogueTextByRowId("Addon", 2090, false).GetString();
+        string? expectedPrompt = _excelFunctions.GetDialogueTextByRowId("Addon", 2090, isRegex: false).GetString();
         if (GameFunctions.GameStringEquals(actualPrompt, expectedPrompt))
         {
             _logger.LogInformation("Selecting no prefered instance as answer for '{Prompt}'", actualPrompt);

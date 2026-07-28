@@ -1,21 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Bindings.ImGui;
+﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Questionable.Controller;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
-using Questionable.Utils;
-using Questionable.Windows.QuestComponents;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Model.Common;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.JournalComponents;
 
 internal sealed class AlliedSocietyJournalComponent
@@ -49,7 +38,8 @@ internal sealed class AlliedSocietyJournalComponent
         bool preventQuestCompletion = configuration.Advanced.PreventQuestCompletion;
         bool abandonQuestBeforeCompletion = configuration.Advanced.AbandonQuestBeforeCompletion;
         bool removeFromPriorityWhenAbandoned = configuration.Advanced.RemoveFromPriorityWhenAbandoned;
-        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Stop, preventQuestCompletion ? ImGuiColors.DalamudOrange : null))
+        bool runCommandAfterStop = configuration.Stop.RunCommandAfterStop;
+        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Stop, preventQuestCompletion ? QstTheme.Accent : null))
         {
             configuration.Advanced.PreventQuestCompletion = !preventQuestCompletion;
             pluginInterface.SavePluginConfig(configuration);
@@ -58,7 +48,7 @@ internal sealed class AlliedSocietyJournalComponent
             ImGui.SetTooltip(_L("Prevent quest completion"));
 
         ImGui.SameLine();
-        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Ban, abandonQuestBeforeCompletion ? ImGuiColors.DalamudOrange : null))
+        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Ban, abandonQuestBeforeCompletion ? QstTheme.Accent : null))
         {
             configuration.Advanced.AbandonQuestBeforeCompletion = !abandonQuestBeforeCompletion;
             pluginInterface.SavePluginConfig(configuration);
@@ -67,13 +57,22 @@ internal sealed class AlliedSocietyJournalComponent
             ImGui.SetTooltip(_L("Abandon quest before completion"));
 
         ImGui.SameLine();
-        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Trash, removeFromPriorityWhenAbandoned ? ImGuiColors.DalamudOrange : null))
+        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Trash, removeFromPriorityWhenAbandoned ? QstTheme.Accent : null))
         {
             configuration.Advanced.RemoveFromPriorityWhenAbandoned = !removeFromPriorityWhenAbandoned;
             pluginInterface.SavePluginConfig(configuration);
         }
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(_L("Remove from priority when abandoned"));
+
+        ImGui.SameLine();
+        if (ImGuiComponentsLocal.IconButton(FontAwesomeIcon.Home, runCommandAfterStop ? QstTheme.Accent : null))
+        {
+            configuration.Stop.RunCommandAfterStop = !runCommandAfterStop;
+            pluginInterface.SavePluginConfig(configuration);
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(_L("Run command when Questionable finishes automatic questing"));
 
         ImGui.SameLine();
 
@@ -87,15 +86,14 @@ internal sealed class AlliedSocietyJournalComponent
         {
             ImGui.SameLine();
             ImGuiComponents.HelpMarker(_LF("Quests marked with yellow have not been completed once yet on this character."),
-                                       FontAwesomeIcon.InfoCircle, ImGuiColors.DalamudYellow);
+                                       FontAwesomeIcon.InfoCircle, QstTheme.Amber);
         }
 
         if (_unchecked > 0)
         {
             ImGui.SameLine();
-            ImGuiComponents.HelpMarker(_L("Quests marked with orange need to be reported as working\n" +
-                                       "or not via the LastChecked system. Ask Aly for more details!"),
-                                       FontAwesomeIcon.InfoCircle, ImGuiColors.DalamudOrange);
+            ImGuiComponents.HelpMarker(_L("Quests marked with orange need to be reported as working or not via the LastChecked system. Ask Aly for more details!"),
+                                       FontAwesomeIcon.InfoCircle, QstTheme.Accent);
             ImGui.SameLine();
             ImGui.Text(_LF("Unchecked: {0}", _unchecked));
         }
@@ -127,7 +125,7 @@ internal sealed class AlliedSocietyJournalComponent
                     )
                 ))
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudOrange)) // highlight the category orange
+                    using (ImRaii.PushColor(ImGuiCol.Text, QstTheme.Accent)) // highlight the category orange
                     {
                         isOpen = ImGui.CollapsingHeader(label);
                     }
@@ -135,7 +133,7 @@ internal sealed class AlliedSocietyJournalComponent
                 }
                 else if (quests.Any(x => !questFunctions.IsQuestComplete(x.QuestId))) // if the character has not completed a quest in this category
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudYellow))
+                    using (ImRaii.PushColor(ImGuiCol.Text, QstTheme.Amber))
                     {
                         isOpen = ImGui.CollapsingHeader(label);
                     }
@@ -179,20 +177,20 @@ internal sealed class AlliedSocietyJournalComponent
         bool fate = false;
         string lastChecked = "";
         if (!questRegistry.TryGetQuest(questInfo.QuestId, out Quest? quest))
-            color = ImGuiColors.DalamudGrey;
+            color = QstTheme.TextMuted;
         else
         {
             if (quest.Root.LastChecked.Date != null)
             {
                 lastChecked = $"({quest.Root.LastChecked.Date})";
                 if (quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays > 30)
-                    color = ImGuiColors.DalamudOrange;
+                    color = QstTheme.Accent;
             }
             else
-                color = ImGuiColors.ParsedOrange;
+                color = QstTheme.Accent;
             if (quest.Root.Disabled && (quest.Root.Comment ?? "").Contains("FATE"))
             {
-                color = ImGuiColors.DalamudRed;
+                color = QstTheme.Danger;
                 fate = true;
             }
         }
@@ -204,7 +202,7 @@ internal sealed class AlliedSocietyJournalComponent
             checklistItem = $"[+{questInfo.SocietyRepValue}] " + checklistItem;
         if (uiUtils.ChecklistItem(checklistItem, color, icon))
             questTooltipComponent.Draw(questInfo);
-        if (addPending && (color.Equals(ImGuiColors.DalamudOrange) || color.Equals(ImGuiColors.ParsedOrange)))
+        if (addPending && (color.Equals(QstTheme.Accent) || color.Equals(QstTheme.Accent)))
             questController.PriorityManager.Add(questInfo.QuestId);
 
         questJournalUtils.ShowContextMenu(questInfo, quest, nameof(AlliedSocietyJournalComponent));
@@ -213,7 +211,7 @@ internal sealed class AlliedSocietyJournalComponent
         {
             ImGui.SameLine();
             using (pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
-                ImGui.TextColored(ImGuiColors.DalamudYellow, FontAwesomeIcon.ExclamationCircle.ToIconString());
+                ImGui.TextColored(QstTheme.Amber, FontAwesomeIcon.ExclamationCircle.ToIconString());
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(_L("This quest is in Priority Quests."));
         }

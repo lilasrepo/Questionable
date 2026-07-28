@@ -1,17 +1,8 @@
-using System;
-using System.Diagnostics;
-using Dalamud.Bindings.ImGui;
+﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
-using Dalamud.Interface.Windowing;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
-using Questionable.Controller;
-using Questionable.Controller.GameUi;
-using Questionable.Data;
+using Dalamud.Interface.Utility.Raii;
 using Questionable.Windows.Common;
-using Questionable.Windows.QuestComponents;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows;
 
 internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
@@ -34,6 +25,9 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
     private readonly RemainingTasksComponent _remainingTasksComponent;
     private readonly ReportWarningComponent _reportWarningComponent;
     private readonly TerritoryData _territoryData;
+    private readonly BossModIpc _bossModIpc;
+
+    private bool _wasRunning;
 
     public QuestWindow(IDalamudPluginInterface pluginInterface,
         QuestController questController,
@@ -50,8 +44,9 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
         ReportWarningComponent reportWarningComponent,
         IFramework framework,
         InteractionUiController interactionUiController,
-        ConfigWindow configWindow)
-        : base((configuration.Advanced.Debug ? "(DEBUG) " : "") + $"QST v{PluginVersion.ToString(4)}###Questionable",
+        ConfigWindow configWindow,
+        BossModIpc bossModIpc)
+        : base((configuration.Advanced.Debug ? "(!) " : "") + $"QST v{PluginVersion.ToString(4)}###Questionable",
             ImGuiWindowFlags.AlwaysAutoResize)
     {
         _pluginInterface = pluginInterface;
@@ -69,13 +64,15 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
         _reportWarningComponent = reportWarningComponent;
         _framework = framework;
         _interactionUiController = interactionUiController;
+        _bossModIpc = bossModIpc;
 
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new(240, 30),
+            MinimumSize = new(300, 30),
             MaximumSize = default
         };
         RespectCloseHotkey = false;
+        ShowCloseButton = true;
         AllowClickthrough = false;
 
         _minimizeButton = new()
@@ -100,26 +97,10 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
             Priority = int.MinValue,
             ShowTooltip = () =>
             {
-                ImGui.BeginTooltip();
+                using ImRaii.IEndObject _ = ImRaii.Tooltip();
                 ImGui.Text(_L("Open Configuration"));
-                ImGui.EndTooltip();
             }
         });
-
-        if (!_configuration.General.HideSponsorButton)
-            TitleBarButtons.Add(new()
-            {
-                Icon = FontAwesomeIcon.Heart,
-                IconOffset = new(1.5f, 1),
-                Click = _ => Process.Start(new ProcessStartInfo { FileName = "https://github.com/sponsors/alydevs", UseShellExecute = true }),
-                Priority = int.MinValue,
-                ShowTooltip = () =>
-                {
-                    ImGui.BeginTooltip();
-                    ImGui.Text(_L("Sponsor QST development"));
-                    ImGui.EndTooltip();
-                }
-            });
 
         _activeQuestComponent.Reload += OnReload;
         _quickAccessButtonsComponent.Reload += OnReload;
@@ -133,17 +114,16 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
 
     public override void PreOpenCheck()
     {
-        if (_questController.IsRunning)
-        {
+        bool isRunning = _questController.IsRunning;
+
+        if (isRunning && !_wasRunning)
             IsOpen = true;
+        _wasRunning = isRunning;
+
+        if (isRunning)
             Flags |= ImGuiWindowFlags.NoCollapse;
-            ShowCloseButton = false;
-        }
         else
-        {
             Flags &= ~ImGuiWindowFlags.NoCollapse;
-            ShowCloseButton = true;
-        }
     }
 
     public override bool DrawConditions()
@@ -172,44 +152,44 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
             }
 #endif
             string notice = "";
+            if (_bossModIpc.BossModRebornDetected())
+                notice = _L("Questionable is not compatible with BossMod Reborn!");
             if (notice.Length != 0)
             {
-                ImGui.TextColored(ImGuiColors.DPSRed, _L("Notice"));
+                ImGui.TextColored(QstTheme.Danger, _L("Notice"));
                 ImGui.TextWrapped(_L(notice));
                 ImGui.Separator();
             }
 
+            _activeQuestComponent.DrawTitleBarPill(WindowName);
             _activeQuestComponent.Draw(IsMinimized);
             if (!IsMinimized)
             {
-                ImGui.Separator();
-
                 if (false)
                 {
                     // TODO add tests
                 }
 
-                if (_aRealmRebornComponent.ShouldDraw)
-                {
+                if (_aRealmRebornComponent.ShouldDraw
+                    && QstWidgets.SectionHeader(_L("A Realm Reborn"), "ARealmReborn"))
                     _aRealmRebornComponent.Draw();
-                    ImGui.Separator();
-                }
 
-                if (_eventInfoComponent.ShouldDraw)
-                {
+                if (_eventInfoComponent.ShouldDraw
+                    && QstWidgets.SectionHeader(_L("Events"), "Events"))
                     _eventInfoComponent.Draw();
-                    ImGui.Separator();
-                }
 
-                _quickAccessButtonsComponent.Draw();
-                ImGui.Separator();
-                _creationUtilsComponent.Draw();
+                if (QstWidgets.SectionHeader(_L("Quick Access"), "QuickAccess"))
+                    _quickAccessButtonsComponent.Draw();
+
+                if (QstWidgets.SectionHeader(_L("Path Tools"), "PathTools", defaultOpen: false))
+                    _creationUtilsComponent.Draw();
+
                 _remainingTasksComponent.Draw();
             }
         }
         catch (Exception e)
         {
-            ImGui.TextColored(ImGuiColors.DalamudRed, e.ToString());
+            ImGui.TextColored(QstTheme.Danger, e.ToString());
         }
     }
 
@@ -218,7 +198,7 @@ internal sealed class QuestWindow : LWindow, IPersistableWindowConfig
     internal void Reload()
     {
         _questController.Reload();
-        _framework.RunOnTick(() => _interactionUiController.HandleCurrentDialogueChoices(),
+        _ = _framework.RunOnTick(_interactionUiController.HandleCurrentDialogueChoices,
             TimeSpan.FromMilliseconds(200));
     }
 }

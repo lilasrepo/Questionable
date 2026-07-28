@@ -1,16 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using Dalamud.Memory;
-using ECommons;
-using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
-using Questionable.Data;
-using Questionable.Utils;
 using Sheets = Lumina.Excel.Sheets;
 namespace Questionable.Windows.Utils;
 
@@ -82,7 +76,7 @@ internal unsafe sealed class RedoUtil
         _ = chapterIndex;
     }
 
-    internal bool IsRedoActive() => QuestRedoHud != null && QuestRedoHud->IsAgentActive() && TryGetActiveRedoChapter(out var _) == true;
+    internal bool IsRedoActive() => QuestRedoHud != null && QuestRedoHud->IsAgentActive() && TryGetActiveRedoChapter(out var _);
 
     internal bool TryGetActiveRedoChapter(out QuestRedoChapterUI? questRedoChapter)
     {
@@ -103,42 +97,5 @@ internal unsafe sealed class RedoUtil
         }
         questRedoChapter = null;
         return false;
-    }
-}
-
-internal sealed record RedoCache(Sheets.QuestRedoChapterUI ChapterUi, List<Sheets.Quest> Quests)
-{
-    public Sheets.QuestRedoChapterUI ChapterUi = ChapterUi;
-    public List<Sheets.Quest> Quests = Quests;
-}
-
-internal sealed record RedoIndex(QuestRedoChapterUI Chapter, int Index)
-{
-    public QuestRedoChapterUI Chapter = Chapter;
-    public int Index = Index;
-    public int SimplifiedIndex
-    {
-        get
-        {
-            int index = Index + 1;
-            if (Chapter.RowId.Equals(1)) // ARR part 1
-            {
-                // handling for citystate starts numbering
-                if (index.InRange(22, 43)) // gridania
-                    index -= 21;
-                if (index.InRange(43, 65)) // uldah
-                    index -= 42;
-                if (index == 65) // call of the sea limsa/gridania
-                    index = 22;
-                if (index == 66) // call of the sea uldah
-                    index = 23;
-            }
-            return index;
-        }
-    }
-
-    public override string ToString()
-    {
-        return $"{Chapter.ChapterName} (#{SimplifiedIndex})";
     }
 }

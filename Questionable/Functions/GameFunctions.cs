@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
@@ -11,23 +11,18 @@ using Dalamud.Game.ClientState.Objects;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
-using Microsoft.Extensions.Logging;
 using Questionable.Controller.Steps.Interactions;
-using Questionable.Controller.Utils;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Utils;
 using Action = Lumina.Excel.Sheets.Action;
 using BattleChara = FFXIVClientStructs.FFXIV.Client.Game.Character.BattleChara;
 using ContentFinderCondition = Lumina.Excel.Sheets.ContentFinderCondition;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
-using Quest = Questionable.Model.Quest;
+using Quest = Questionable.Domain.Quest;
 
 namespace Questionable.Functions;
 
@@ -40,19 +35,17 @@ internal sealed unsafe partial class GameFunctions
     IClientState clientState,
     IGameGuiAdapter gameGui,
     Configuration configuration,
+    QuestFunctions questFunctions,
     ILogger<GameFunctions> logger,
     HighlightObject highlightObject)
 {
-    private readonly AbandonDutyDelegate _abandonDuty =
-        Marshal.GetDelegateForFunctionPointer<AbandonDutyDelegate>(EventFramework.Addresses.LeaveCurrentContent.Value);
     private readonly ReadOnlyDictionary<uint, uint> _contentFinderConditionToContentId = Svc.Data.GetExcelSheet<ContentFinderCondition>()
         .Where(x => x.RowId > 0 && x.Content.RowId > 0)
         .ToDictionary(x => x.RowId, x => x.Content.RowId)
         .AsReadOnly();
 
     private static readonly ReadOnlyDictionary<uint, uint> _territoryToAetherCurrentCompFlgSet = Svc.Data.GetExcelSheet<TerritoryType>()
-        .Where(x => x.RowId > 0)
-        .Where(x => x.AetherCurrentCompFlgSet.RowId > 0)
+        .Where(x => x.RowId > 0 && x.AetherCurrentCompFlgSet.RowId > 0)
         .ToDictionary(x => x.RowId, x => x.AetherCurrentCompFlgSet.RowId)
         .AsReadOnly();
 
@@ -80,8 +73,8 @@ internal sealed unsafe partial class GameFunctions
         BattleChara* battleChara = (BattleChara*)(Svc.Objects[0]?.Address ?? 0);
         if (battleChara != null && battleChara->Mount.MountId != 0)
             return battleChara->Mount.MountId;
-        else
-            return null;
+
+        return null;
     }
 
     public bool IsFlyingUnlockedInCurrentZone() => IsFlyingUnlocked(clientState.TerritoryType);
@@ -139,13 +132,11 @@ internal sealed unsafe partial class GameFunctions
             logger.LogInformation("Interact result: (none) for GatheringPoint");
             return true;
         }
-        else
-        {
-            long result = (long)TargetSystem.Instance()->InteractWithObject((GameObject*)gameObject.Address, false);
 
-            logger.LogInformation("Interact result: {Result}", result);
-            return result != 7 && result > 0;
-        }
+        long result = (long)TargetSystem.Instance()->InteractWithObject((GameObject*)gameObject.Address, checkLineOfSight: false);
+
+        logger.LogInformation("Interact result: {Result}", result);
+        return result != 7 && result > 0;
     }
 
     public bool UseItem(uint itemId)
@@ -256,15 +247,34 @@ internal sealed unsafe partial class GameFunctions
         return gameObject != null && (gameObject.Position - position).Length() < distance;
     }
 
+    public bool IsMountingUnlocked()
+    {
+        List<ushort> quests = [700, 701, 702];
+        return quests.Any(q => questFunctions.IsQuestComplete(new QuestId(q)));
+    }
+
     public bool HasStatusPreventingMount()
     {
         if (condition[ConditionFlag.Swimming] && !IsFlyingUnlockedInCurrentZone())
+        {
+            logger.LogDebug("Swimming && !IsFlyingUnlockedInCurrentZone");
             return true;
+        }
 
         // company chocobo is locked
-        PlayerState* playerState = PlayerState.Instance();
-        if (playerState != null && !playerState->IsMountUnlocked(1))
+        // - company chocobo whistle may not have been used, this does not necessarily mean mounting is not possible -alydev
+        //PlayerState* playerState = PlayerState.Instance();
+        //if (playerState != null && !playerState->IsMountUnlocked(1))
+        //{
+        //    logger.LogDebug("!playerState->IsMountUnlocked(1)");
+        //    return true;
+        //}
+
+        if (!IsMountingUnlocked())
+        {
+            logger.LogDebug("!IsMountingUnlocked");
             return true;
+        }
 
         IGameObject? localPlayer = objectTable[0];
         if (localPlayer == null)
@@ -273,21 +283,28 @@ internal sealed unsafe partial class GameFunctions
         if (HasStatus(1151) ||
             HasStatus(1945)) // hoofing it
         {
+            logger.LogDebug("hoofing it");
             return true;
         }
 
-        return HasCharacterStatusPreventingMountOrSprint();
+        if (HasCharacterStatusPreventingMountOrSprint())
+        {
+            logger.LogDebug("HasCharacterStatusPreventingMountOrSprint");
+            return true;
+        }
+        return false;
     }
 
     public bool HasStatusPreventingSprint() => HasCharacterStatusPreventingMountOrSprint();
 
-    private bool HasCharacterStatusPreventingMountOrSprint()
+    internal bool HasCharacterStatusPreventingMountOrSprint()
     {
-        return HasStatus(565) ||
-               HasStatus(404) ||
-               HasStatus(416) ||
-               HasStatus(2729) ||
-               HasStatus(2730);
+        return HasStatus(565) || // Transfiguration
+               HasStatus(416) || // Transparent
+               HasStatus(404) || // Transporting
+               HasStatus(4376) || // Transporting
+               HasStatus(2729) || // Incorporeal
+               HasStatus(2730); // Endwalker
     }
 
     public bool HasStatus(EStatus statusId)
@@ -359,16 +376,14 @@ internal sealed unsafe partial class GameFunctions
 
             return false;
         }
-        else
-        {
-            logger.LogWarning("Can't unmount right now?");
-            return false;
-        }
+
+        logger.LogWarning("Can't unmount right now?");
+        return false;
     }
 
-    public void OpenDutyFinder(uint contentFinderConditionId)
+    public void OpenDutyFinder(uint contentFinderConditionId = 0, uint contentId = 0)
     {
-        if (_contentFinderConditionToContentId.TryGetValue(contentFinderConditionId, out uint contentId))
+        if (contentId != 0 || _contentFinderConditionToContentId.TryGetValue(contentFinderConditionId, out contentId))
         {
             if (UIState.IsInstanceContentUnlocked(contentId))
                 AgentContentsFinder.Instance()->OpenRegularDuty(contentFinderConditionId);
@@ -386,10 +401,16 @@ internal sealed unsafe partial class GameFunctions
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pending>")]
+    public void OpenVariantDF()
+    {
+
+    }
+
     // ECommons' AddonMaster returns plain entry text, but excel-resolved text keeps decoration
     // macros (icons, italics, ...) as literal "<icon(69)>"-style tokens. Strip those so addon
     // text and excel text compare equal regardless of which reader produced them.
-    [GeneratedRegex("<[^>]+>", RegexOptions.Compiled)]
+    [GeneratedRegex("<[^>]+>", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex MacroLiteralRegex();
 
     /// <summary>
@@ -439,6 +460,7 @@ internal sealed unsafe partial class GameFunctions
                condition[ConditionFlag.Occupied33] || condition[ConditionFlag.Occupied38] ||
                condition[ConditionFlag.Occupied39] || condition[ConditionFlag.OccupiedInEvent] ||
                condition[ConditionFlag.OccupiedInQuestEvent] || condition[ConditionFlag.OccupiedInCutSceneEvent] ||
+               //condition[ConditionFlag.WatchingCutscene] || //condition[ConditionFlag.WatchingCutscene78] ||
                condition[ConditionFlag.Casting] || condition[ConditionFlag.MountOrOrnamentTransition] ||
                condition[ConditionFlag.BetweenAreas] || condition[ConditionFlag.BetweenAreas51] ||
                condition[ConditionFlag.Jumping61] || condition[ConditionFlag.ExecutingGatheringAction] ||
@@ -515,12 +537,6 @@ internal sealed unsafe partial class GameFunctions
         return obj.DataId;
     }
 
-    /// <summary>
-    ///     Abandons <em>some</em> quest battles/duties; but not all? Useful for debugging some quest battle/vbm related
-    ///     issues.
-    /// </summary>
-    public void AbandonDuty() => _abandonDuty(false);
-
     public IReadOnlyList<uint>? GetUnlockLinks()
     {
         UIState* uiState = UIState.Instance();
@@ -535,5 +551,4 @@ internal sealed unsafe partial class GameFunctions
         logger.LogInformation("Unlocked unlock links: {UnlockedUnlockLinks}", string.Join(", ", unlockedUnlockLinks));
         return unlockedUnlockLinks;
     }
-    private delegate void AbandonDutyDelegate(bool a1);
 }

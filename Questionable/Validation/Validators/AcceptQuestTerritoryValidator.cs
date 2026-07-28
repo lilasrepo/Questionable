@@ -1,10 +1,8 @@
-using System.Collections.Generic;
-using System.Linq;
+// Authored with LLM assistance, changes must be reviewed and owned by a human.
+// Initial version reviewed and owned by @alydevs
+
 using Questionable.Controller.Steps.Shared;
-using Questionable.Data;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Validation.Validators;
 
 /// <summary>
@@ -55,6 +53,7 @@ internal sealed class AcceptQuestTerritoryValidator(IAetheryteTerritoryProvider 
                 Sequence = 0,
                 Step = stepId,
                 Type = EIssueType.InvalidAcceptQuestTerritory,
+                TerritoryId = step.TerritoryId,
                 Severity = EIssueSeverity.None,
                 Description = _LF("AcceptQuest territory {0} has no aetheryte and no teleport shortcut is set", step.TerritoryId),
             };

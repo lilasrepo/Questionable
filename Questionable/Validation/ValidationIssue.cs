@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
-using Questionable.Model;
+using Questionable.Model.Common;
 using Questionable.Model.Questing;
-using Questionable.Model.Common.Converter;
 namespace Questionable.Validation;
 
 internal sealed record ValidationIssue
@@ -11,6 +10,7 @@ internal sealed record ValidationIssue
     public required int? Step { get; init; }
     [JsonConverter(typeof(AlliedSocietyConverter))]
     public EAlliedSociety AlliedSociety { get; init; } = EAlliedSociety.None;
+    public uint? TerritoryId { get; set; }
     [JsonConverter(typeof(IssueTypeConverter))]
     public required EIssueType Type { get; init; }
     [JsonConverter(typeof(IssueSeverityConverter))]

@@ -1,28 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Lumina.Excel.Sheets;
-using Questionable.PathData;
-using Questionable.Utils;
-using Questionable.Windows.Utils;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.ConfigComponents;
 
+// TODO: refactor — heavy nesting (41 lines indented ≥6 levels, max indent ~12 levels).
 internal sealed class DebugConfigComponent
 (
     IDalamudPluginInterface pluginInterface,
     Configuration configuration,
     PathDataUpdater pathDataUpdater,
-    IDataManager dataManager) : ConfigComponent(pluginInterface, configuration)
+    IDataManager dataManager,
+    AutoGen.DraftQuestPathService draftQuestPathService) : ConfigComponent(pluginInterface, configuration)
 {
     private readonly ItemBlacklistSelector _itemBlacklistSelector = new(dataManager);
     private uint? _itemToRemove;
@@ -33,7 +25,7 @@ internal sealed class DebugConfigComponent
         if (!tab)
             return;
 
-        ImGui.TextColored(ImGuiColors.DalamudRed,
+        ImGui.TextColored(QstTheme.Danger,
             _L("Enabling any option here may cause unexpected behavior. Use at your own risk."));
 
         ImGui.Separator();
@@ -45,7 +37,35 @@ internal sealed class DebugConfigComponent
             Save();
         }
 
-        if (ImGui.CollapsingHeader(_L("Information")))
+        ImGui.Separator();
+
+        bool allowPathGeneration = Configuration.Advanced.AllowPathGeneration;
+        if (ImGui.Checkbox(_L("Allow questpath generation (experimental)"), ref allowPathGeneration))
+        {
+            Configuration.Advanced.AllowPathGeneration = allowPathGeneration;
+            Save();
+        }
+
+        if (allowPathGeneration)
+        {
+            using (ImRaii.PushIndent())
+            {
+                ImGui.TextColored(QstTheme.Accent,
+                    _L("Generated paths are unreviewed machine drafts: expect wrong targets, missing steps and stalls."));
+                ImGui.TextColored(QstTheme.Accent,
+                    _L("Stay at the keyboard while one is running - never leave it unattended."));
+                ImGui.TextUnformatted(
+                    _L("Right-click a quest without a path in the Journal Progress window to generate a draft."));
+
+                if (!draftQuestPathService.UserDirectoryIsLoaded)
+                {
+                    ImGui.TextColored(QstTheme.Danger,
+                        _L("Generated paths only load in debug mode or on a dev install; without one of those, this option does nothing."));
+                }
+            }
+        }
+
+        if (QstWidgets.SectionHeader(_L("Information"), "Information", defaultOpen: false))
         {
             using (ImRaii.PushIndent())
             {
@@ -103,6 +123,7 @@ internal sealed class DebugConfigComponent
                     bool showDirector = Configuration.Advanced.ShowDirector;
                     bool showActionManager = Configuration.Advanced.ShowActionManager;
                     bool showNewGamePlus = Configuration.Advanced.ShowNewGamePlus;
+                    bool showHoveredItem = Configuration.Advanced.ShowHoveredItem;
                     using (ImRaii.PushIndent())
                     {
                         ImGui.AlignTextToFramePadding();
@@ -135,6 +156,12 @@ internal sealed class DebugConfigComponent
                             Configuration.Advanced.ShowNewGamePlus = showNewGamePlus;
                             Save();
                         }
+
+                        if (ImGui.Checkbox(_L("Show Hovered Item"), ref showHoveredItem))
+                        {
+                            Configuration.Advanced.ShowHoveredItem = showHoveredItem;
+                            Save();
+                        }
                     }
                 }
             }
@@ -160,7 +187,7 @@ internal sealed class DebugConfigComponent
 
         ImGui.Separator();
 
-        if (ImGui.CollapsingHeader(_L("Reward item redemption")))
+        if (QstWidgets.SectionHeader(_L("Reward item redemption"), "RewardRedemption", defaultOpen: false))
         {
             using (ImRaii.PushIndent())
             {
@@ -242,7 +269,7 @@ internal sealed class DebugConfigComponent
         }
 
         ImGui.Separator();
-        if (ImGui.CollapsingHeader(_L("Quest/Interaction Skips")))
+        if (QstWidgets.SectionHeader(_L("Quest/Interaction Skips"), "QuestSkips", defaultOpen: false))
         {
             using (ImRaii.PushIndent())
             {
@@ -377,10 +404,10 @@ internal sealed class DebugConfigComponent
                 pathDataUpdater.CheckForUpdatesManually();
 
             ImGui.SameLine();
-            ImGui.TextColored(ImGuiColors.DalamudGrey, pathDataUpdater.Status);
+            ImGui.TextColored(QstTheme.TextMuted, pathDataUpdater.Status);
 
             long installedVersion = Configuration.PathData.InstalledDataVersion;
-            ImGui.TextColored(ImGuiColors.DalamudGrey,
+            ImGui.TextColored(QstTheme.TextMuted,
                 installedVersion == 0
                     ? _L("Using the path data bundled with the plugin.")
                     : _LF("Downloaded path data version: {0}", installedVersion));

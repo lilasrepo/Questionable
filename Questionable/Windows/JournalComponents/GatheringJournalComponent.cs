@@ -1,23 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Lumina.Excel;
 using Lumina.Excel.Sheets;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller;
-using Questionable.Model;
 using Questionable.Model.Gathering;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.JournalComponents;
 
 internal sealed class GatheringJournalComponent
@@ -82,10 +71,8 @@ internal sealed class GatheringJournalComponent
             .ToDictionary(x => x.GatheringItemId, x => x.Name!);
 
         _gatheringPointsByExpansion = dataManager.GetExcelSheet<GatheringPoint>()
-            .Where(x => x.GatheringPointBase.RowId != 0)
-            // API12 / 7.1: skip refs whose target row is absent (game-7.5 GatheringPointBase rows).
-            .Where(x => x.GatheringPointBase.ValueNullable is not null)
-            .Where(x => x.GatheringPointBase.RowId is < 653 or > 680) // exclude ishgard restoration phase 1
+            // exclude ishgard restoration phase 1
+            .Where(x => x.GatheringPointBase.RowId != 0 && x.GatheringPointBase.RowId is < 653 or > 680)
             .DistinctBy(x => x.GatheringPointBase.RowId)
             .Select(x => new
             {
@@ -109,14 +96,10 @@ internal sealed class GatheringJournalComponent
             {
                 if (leveGatheringPoints.Contains(x.GatheringPointId))
                     return null;
-                else if (x.Point.TerritoryType == 1 &&
-                         _gatheringPointRegistry.TryGetGatheringPoint(x.Point.Id, out GatheringRoot? gatheringRoot))
+                if (x.Point.TerritoryType == 1 && _gatheringPointRegistry.TryGetGatheringPoint(x.Point.Id, out GatheringRoot? gatheringRoot))
                 {
                     // for some reason the game doesn't know where this gathering location is
-                    var territoryRowOpt = territoryTypeSheet.GetRowOrDefault(gatheringRoot.Steps.Last().TerritoryId);
-                    if (territoryRowOpt is null)
-                        return x.Point;
-                    var territoryType = territoryRowOpt.Value;
+                    TerritoryType territoryType = territoryTypeSheet.GetRow(gatheringRoot.Steps[^1].TerritoryId);
                     return x.Point with
                     {
                         Expansion = (EExpansionVersion)territoryType.ExVersion.RowId,
@@ -124,14 +107,11 @@ internal sealed class GatheringJournalComponent
                         TerritoryName = territoryType.PlaceName.ValueNullable?.Name.ToString()
                     };
                 }
-                else
-                    return x.Point;
+                return x.Point;
             })
             .Where(x => x != null)
             .Cast<DefaultGatheringPoint>()
-            .Where(x => x.Expansion != (EExpansionVersion)byte.MaxValue)
-            .Where(x => x.GatheringItemIds.Count > 0)
-            .Where(x => x.TerritoryType is not 901 and not 929) // exclude old diadem
+            .Where(x => x.Expansion != (EExpansionVersion)byte.MaxValue && x.GatheringItemIds.Count > 0 && x.TerritoryType is not 901 and not 929)
             .GroupBy(x => x.Expansion)
             .Select(x => new ExpansionPoints(x.Key, x
                 .GroupBy(y => new
@@ -280,7 +260,7 @@ internal sealed class GatheringJournalComponent
         if (item < 10_000)
             _uiUtils.ChecklistItem(string.Empty, _gatheredItems.Contains(item));
         else
-            _uiUtils.ChecklistItem(string.Empty, ImGuiColors.DalamudGrey, FontAwesomeIcon.Minus);
+            _uiUtils.ChecklistItem(string.Empty, QstTheme.TextMuted, FontAwesomeIcon.Minus);
     }
 
     private static void DrawCount(int count, int total)
@@ -291,7 +271,7 @@ internal sealed class GatheringJournalComponent
         string text =
             $"{count.ToString(CultureInfo.CurrentCulture).PadLeft(len.Length)} / {total.ToString(CultureInfo.CurrentCulture).PadLeft(len.Length)}";
         if (count == total)
-            ImGui.TextColored(ImGuiColors.ParsedGreen, text);
+            ImGui.TextColored(QstTheme.Success, text);
         else
             ImGui.TextUnformatted(text);
 
@@ -335,16 +315,14 @@ internal sealed class GatheringJournalComponent
                     .Select(x => FilterGatheringPoint(x, _ => true)!)
                     .ToList());
         }
-        else
-        {
-            List<FilteredGatheringPoint> filteredPoints = territory.Points
-                .Select(x => FilterGatheringPoint(x, match))
-                .Where(x => x != null)
-                .Select(x => x!)
-                .ToList();
-            if (filteredPoints.Count > 0)
-                return new(territory, filteredPoints);
-        }
+
+        List<FilteredGatheringPoint> filteredPoints = territory.Points
+            .Select(x => FilterGatheringPoint(x, match))
+            .Where(x => x != null)
+            .Select(x => x!)
+            .ToList();
+        if (filteredPoints.Count > 0)
+            return new(territory, filteredPoints);
 
         return null;
     }
@@ -354,13 +332,11 @@ internal sealed class GatheringJournalComponent
     {
         if (match(gatheringPoint.PlaceName ?? string.Empty))
             return new(gatheringPoint, gatheringPoint.GatheringItemIds);
-        else
-        {
-            List<ushort> filteredItems = gatheringPoint.GatheringItemIds
-                .Where(x => match(_gatheringItems.GetValueOrDefault(x, string.Empty))).ToList();
-            if (filteredItems.Count > 0)
-                return new(gatheringPoint, filteredItems);
-        }
+
+        List<ushort> filteredItems = gatheringPoint.GatheringItemIds
+            .Where(x => match(_gatheringItems.GetValueOrDefault(x, string.Empty))).ToList();
+        if (filteredItems.Count > 0)
+            return new(gatheringPoint, filteredItems);
 
         return null;
     }

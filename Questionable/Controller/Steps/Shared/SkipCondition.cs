@@ -1,18 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Game.ClientState.Conditions;
+﻿using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Plugin.Services;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller.Utils;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
 namespace Questionable.Controller.Steps.Shared;
 
@@ -266,8 +257,20 @@ internal static class SkipCondition
                 return false;
 
             InventoryManager* inventoryManager = InventoryManager.Instance();
-            int itemCount = inventoryManager->GetInventoryItemCount(step.ItemId.Value, false, false)
-                            + inventoryManager->GetInventoryItemCount(step.ItemId.Value, true, false);
+            int itemCount = 0;
+            switch (step.ItemQuality)
+            {
+                case EItemQuality.NQ:
+                    itemCount = inventoryManager->GetInventoryItemCount(step.ItemId.Value, isHq: false, checkEquipped: false);
+                    break;
+                case EItemQuality.HQ:
+                    itemCount = inventoryManager->GetInventoryItemCount(step.ItemId.Value, isHq: true, checkEquipped: false);
+                    break;
+                case EItemQuality.Any:
+                    itemCount = inventoryManager->GetInventoryItemCount(step.ItemId.Value, isHq: false, checkEquipped: false)
+                                + inventoryManager->GetInventoryItemCount(step.ItemId.Value, isHq: true, checkEquipped: false);
+                    break;
+            }
 
             if (itemCount == 0 && skipConditions.Item is { NotInInventory: true })
             {
@@ -275,7 +278,8 @@ internal static class SkipCondition
                     step.ItemId.Value);
                 return true;
             }
-            else if (itemCount > 0 && skipConditions.Item is { NotInInventory: false })
+
+            if (itemCount > 0 && skipConditions.Item is { NotInInventory: false })
             {
                 logger.LogInformation("Skipping step, item with itemId {ItemId} in inventory",
                     step.ItemId.Value);

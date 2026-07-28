@@ -1,24 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Plugin.Services;
-using Dalamud.Game.ClientState.Objects;
-using ECommons;
-using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
-using Microsoft.Extensions.Logging;
 using Questionable.Controller.Steps.Common;
+using Questionable.Controller.Steps.Movement;
 using Questionable.Controller.Steps.Shared;
-using Questionable.Data;
-using Questionable.External;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
+using Dalamud.Game.ClientState.Objects;
+using static Questionable.Controller.Steps.ITaskExecutor;
 namespace Questionable.Controller.Steps.Interactions;
 
 internal static class SinglePlayerDuty
@@ -52,6 +43,8 @@ internal static class SinglePlayerDuty
         public const ushort ItsProbablyATrap = 665;
         public const ushort Naadam = 688;
         public const ushort Patisserie = 1298;
+        public const ushort ViperTutorial = 1235;
+        public const ushort EgistentialCrisis = 701;
     }
 
     internal sealed class Factory
@@ -86,7 +79,12 @@ internal static class SinglePlayerDuty
                     tId = cfcData.TerritoryId;
                 }
 
-                yield return new Mount.UnmountTask();
+                yield return new MountStep.UnmountTask();
+                //if (ShouldLeaveParty || condition[ConditionFlag.ParticipatingInCrossWorldPartyOrAlliance])
+                //{
+                //    yield return new LeaveParty();
+                //    yield return new WaitAtStart.WaitDelay(TimeSpan.FromSeconds(0.5));
+                //}
                 if (tId == SpecialTerritories.Patisserie)
                     yield return new Commence(cfcId);
                 yield return new StartSinglePlayerDuty(cfcId);
@@ -108,7 +106,7 @@ internal static class SinglePlayerDuty
                 {
                     yield return new WaitCondition.Task(() => DutyActionsAvailable() || clientState.TerritoryType != SpecialTerritories.ItsProbablyATrap,
                         "Wait(Phase 2)");
-                    yield return new EnableAi(true);
+                    yield return new EnableAi(Passive: true);
                 }
                 else if (tId is SpecialTerritories.Naadam)
                 {
@@ -122,11 +120,72 @@ internal static class SinglePlayerDuty
                             return (new Vector3(352.01f, -1.45f, 288.59f) - pos).Length() < 10f;
                         },
                         "Wait(moving to Ovoo)");
-                    yield return new Mount.UnmountTask();
+                    yield return new MountStep.UnmountTask();
                     yield return new EnableAi();
                 }
                 else if (tId == SpecialTerritories.Patisserie)
                     yield return new SetPreset(BossModIpc.EPreset.NormalMovement);
+                else if (tId == SpecialTerritories.EgistentialCrisis)
+                {
+                    yield return new EnableAi();
+
+                    yield return new MoveTask(step, new(-173.63245f, 23.428497f, 67.91785f));
+                    yield return new WaitCondition.Task(
+                        () =>
+                        {
+                            if (clientState.TerritoryType != SpecialTerritories.EgistentialCrisis)
+                                return true;
+                            return !condition[ConditionFlag.InCombat];
+                        },
+                        "Wait(finishing combat)");
+
+                    yield return new MoveTask(step, new(-81.944534f, 17.852749f, 28.01129f));
+                    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(10));
+
+                    yield return new MoveTask(step, new(-3.189148f, 15.807038f, -2.7008667f));
+                    yield return new WaitCondition.Task(
+                        () =>
+                        {
+                            if (clientState.TerritoryType != SpecialTerritories.EgistentialCrisis)
+                                return true;
+                            return !condition[ConditionFlag.InCombat];
+                        },
+                        "Wait(finishing combat)");
+                    yield return new MoveTask(step, new(54.61206f, 11.988899f, 0.56451416f));
+                    yield return new SetTarget(7256);
+                    yield return new WaitCondition.Task(
+                        () =>
+                        {
+                            if (clientState.TerritoryType != SpecialTerritories.EgistentialCrisis)
+                                return true;
+                            return !condition[ConditionFlag.InCombat];
+                        },
+                        "Wait(finishing combat)");
+                }
+
+                //else if (tId == SpecialTerritories.ViperTutorial)
+                //{
+                //    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(40));
+                //    yield return new Interact.Task(17055, quest, EInteractionType.Interact, SkipMarkerCheck:true);
+                //    yield return new SetTarget(17057);
+                //    yield return new MoveTask(step, new(255.8717f, 15.075876f, 471.1717f));
+                //    yield return new Action.UseOnObject(17057, quest, EAction.WrithingSnap, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(2));
+                //    yield return new Action.UseOnObject(17057, quest, EAction.SteelFangs, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay();
+                //    yield return new Action.UseOnObject(17057, quest, EAction.WrithingSnap, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(2));
+                //    yield return new Action.UseOnObject(17057, quest, EAction.HuntersSting, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay();
+                //    yield return new Action.UseOnObject(17057, quest, EAction.WrithingSnap, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(2));
+                //    yield return new Action.UseOnObject(17057, quest, EAction.FlankstingStrike, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay();
+                //    yield return new Action.UseOnObject(17057, quest, EAction.WrithingSnap, CompletionQuestVariablesFlags:null);
+                //    yield return new WaitAtEnd.WaitDelay(TimeSpan.FromSeconds(2));
+                //    yield return new Action.UseOnObject(17057, quest, EAction.DeathRattle, CompletionQuestVariablesFlags:null);
+                //    yield return new MoveTask(step, new(251.17833f, 15.400139f, 465.84366f));
+                //}
                 else
                     yield return new EnableAi(tId == SpecialTerritories.Naadam);
 
@@ -227,8 +286,8 @@ internal static class SinglePlayerDuty
         {
             if (!movementController.IsNavmeshReady)
                 return $"Navmesh: {movementController.BuiltNavmeshPercent}%";
-            else
-                return null;
+
+            return null;
         }
 
         public override unsafe ETaskResult Update()
@@ -420,5 +479,39 @@ internal static class SinglePlayerDuty
         }
 
         public override bool ShouldInterruptOnDamage() => false;
+    }
+
+    internal sealed record LeaveParty : ITask
+    {
+        public override string ToString() => "LeaveParty()";
+    }
+
+    internal sealed class LeavePartyExecutor(ICommandManager commandManager) : TaskExecutor<LeaveParty>
+    {
+        protected override bool Start() => LeavePartyAction();
+
+        public override ETaskResult Update()
+        {
+            return LeavePartyAction() ? ETaskResult.TaskComplete : ETaskResult.StillRunning;
+        }
+
+        public bool LeavePartyAction()
+        {
+            commandManager.ProcessCommand("/leave"); // TODO find a cleaner way to do this, and also a thing to check if it's done
+            return true;
+        }
+
+        public override bool ShouldInterruptOnDamage() => false;
+    }
+
+    public static unsafe bool ShouldLeaveParty
+    {
+        get
+        {
+            GroupManager* groupManager = GroupManager.Instance();
+            var memberCount = groupManager->MainGroup.MemberCount;
+            Svc.Log.Debug($"ShouldLeaveParty: {memberCount > 1} {memberCount}");
+            return memberCount > 1;
+        }
     }
 }

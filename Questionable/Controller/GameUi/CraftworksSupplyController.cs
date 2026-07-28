@@ -1,12 +1,9 @@
-using System;
+﻿using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.Plugin.Services;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Microsoft.Extensions.Logging;
-using Questionable.Utils;
 using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 namespace Questionable.Controller.GameUi;
 
@@ -89,7 +86,7 @@ internal sealed class CraftworksSupplyController : IDisposable
             return;
 
         AtkUnitBase* parentAddon = AtkStage.Instance()->RaptureAtkUnitManager->GetAddonById(parentId);
-        if (parentAddon->NameString is "BankaCraftworksSupply")
+        if (string.Equals(parentAddon->NameString, "BankaCraftworksSupply", StringComparison.Ordinal))
         {
             _logger.LogInformation("Picking item for {AddonName}", parentAddon->NameString);
             AtkValue* selectSlot = stackalloc AtkValue[]
@@ -101,7 +98,7 @@ internal sealed class CraftworksSupplyController : IDisposable
                 new() { Type = 0, Int = 0 }
             };
             addonContextIconMenu->FireCallback(5, selectSlot);
-            addonContextIconMenu->Close(true);
+            addonContextIconMenu->Close(fireCallback: true);
 
             if (parentAddon->NameString == "BankaCraftworksSupply")
                 _framework.RunOnTick(InteractWithBankaCraftworksSupply, TimeSpan.FromMilliseconds(50));

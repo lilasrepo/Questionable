@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <TargetFramework>net9.0-windows</TargetFramework>
@@ -38,6 +38,14 @@
         <ProjectReference Include="..\GatheringPaths\GatheringPaths.csproj" />
         <ProjectReference Include="..\Questionable.Model\Questionable.Model.csproj" />
         <ProjectReference Include="..\QuestPaths\QuestPaths.csproj" />
+        <!-- Upstream added PunishLib / WrathCombo.API / NotificationMasterAPI as its own
+             submodules. Rather than vendor three more copies, point at the ones this repo
+             already ports and ships, which keeps them version-matched to the deployed
+             plugins. Cross-tree ProjectReference is the existing convention here (AutoDuty
+             references TC_forward/WrathCombo/WrathCombo.API exactly this way). -->
+        <ProjectReference Include="..\..\WrathCombo\WrathCombo.API\WrathCombo.API.csproj" />
+        <ProjectReference Include="..\..\Artisan\PunishLib\PunishLib\PunishLib.csproj" />
+        <ProjectReference Include="..\..\NotificationMaster\NotificationMasterAPI\NotificationMasterAPI\NotificationMasterAPI.csproj" />
     </ItemGroup>
 
     <ItemGroup>

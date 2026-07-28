@@ -1,37 +1,20 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Xml.Linq;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
-using Dalamud.Plugin.Services;
-using ECommons.DalamudServices;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Application.Network.WorkDefinitions;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Microsoft.Extensions.Logging;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.PathData;
 using Questionable.QuestPaths;
-using Questionable.Utils;
-using Questionable.Validation;
-using Questionable.Validation.Validators;
-using static Questionable.Model.QuestInfo;
+using static Questionable.Domain.QuestInfo;
 using static Questionable.Utils.CacheUtils;
 using Sheets = Lumina.Excel.Sheets;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Controller;
 
+// TODO: refactor — heavy nesting (29 lines indented ≥6 levels, max indent ~8 levels).
 internal sealed class QuestRegistry
 {
     private readonly IChatGui _chatGui;
@@ -430,11 +413,11 @@ internal sealed class QuestRegistry
             Steps = [
                     new QuestStep(
                         EInteractionType.CompleteQuest,
-                        info.ToDoLocations.Last().Object.RowId,
-                        info.ToDoLocations.Last().Position,
-                        info.ToDoLocations.Last().Territory.RowId
+                        info.ToDoLocations[^1].Object.RowId,
+                        info.ToDoLocations[^1].Position,
+                        info.ToDoLocations[^1].Territory.RowId
                     ) {
-                        Fly = GameFunctions.IsFlyingUnlocked(info.ToDoLocations.Last().Territory.RowId) ? true : null
+                        Fly = GameFunctions.IsFlyingUnlocked(info.ToDoLocations[^1].Territory.RowId) ? true : null
                     }
                 ]
         };
@@ -456,8 +439,8 @@ internal sealed class QuestRegistry
             return Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths");
         return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests");
     }
-    public static string? GetFullPath(IQuestInfo info) => GetFullPath((QuestInfo)info);
-    public static string? GetFullPath(QuestInfo info)
+    public static string? GetFullPath(IQuestInfo info, bool withFilename = true) => GetFullPath((QuestInfo)info, withFilename);
+    public static string? GetFullPath(QuestInfo info, bool withFilename = true)
     {
         var filename = GetFilename(info);
         var pluginConfig = Svc.PluginInterface.GetPluginConfig();
@@ -466,33 +449,43 @@ internal sealed class QuestRegistry
             DirectoryInfo? targetFolder = new(Path.Combine(AssemblyLocation.Directory!.Parent!.Parent!.FullName, "QuestPaths", ExpansionData.ExpansionFolders[info.Expansion]));
             if (targetFolder == null)
                 return null;
-            if (info.JournalGenre == null || info.JournalGenre == uint.MaxValue)
-                return Path.Combine(targetFolder.FullName, "Unsorted", filename);
-            var genre = Svc.Data.GetExcelSheet<Sheets.JournalGenre>().GetRow(info.JournalGenre.Value);
-            var path = $"{genre.Name}";
-            Svc.Log.Debug($"Genre: {genre.Name}");
-            if (genre.JournalCategory.ValueNullable != null)
+            string? path = "";
+            if (info.JournalGenre != null && info.JournalGenre != uint.MaxValue)
             {
-                var category = genre.JournalCategory.Value;
-                Svc.Log.Debug($"Category: {category.Name}");
-                if (category.Name != genre.Name)
-                    path = Path.Combine($"{category.Name}", path);
-                if (category.JournalSection.ValueNullable != null)
+                var genre = Svc.Data.GetExcelSheet<Sheets.JournalGenre>().GetRow(info.JournalGenre.Value);
+                path = $"{genre.Name}";
+                Svc.Log.Debug($"Genre: {genre.Name}");
+                if (genre.JournalCategory.ValueNullable != null)
                 {
-                    var section = category.JournalSection.Value;
-                    Svc.Log.Debug($"Section: {section.Name}");
-                    if (section.Name != category.Name)
+                    var category = genre.JournalCategory.Value;
+                    Svc.Log.Debug($"Category: {category.Name}");
+                    if (category.Name != genre.Name)
+                        path = Path.Combine($"{category.Name}", path);
+                    if (category.JournalSection.ValueNullable != null)
                     {
-                        var catPath = $"{category.Name}".Replace($"{section.Name}", "").Trim();
-                        path = Path.Combine($"{section.Name}", catPath, category.Name != genre.Name ? $"{genre.Name}" : "");
+                        var section = category.JournalSection.Value;
+                        Svc.Log.Debug($"Section: {section.Name}");
+                        if (section.Name != category.Name)
+                        {
+                            var catPath = $"{category.Name}".Replace($"{section.Name}", "").Trim();
+                            path = Path.Combine($"{section.Name}", catPath, category.Name != genre.Name ? $"{genre.Name}" : "");
+                        }
                     }
                 }
             }
             if (path == null || path.Length == 0)
-                return Path.Combine(targetFolder.FullName, "Unsorted", filename);
-            return Path.Combine(targetFolder.FullName, path, filename);
+            {
+                if (withFilename)
+                    return Path.Combine(targetFolder.FullName, "Unsorted", filename);
+                return Path.Combine(targetFolder.FullName, "Unsorted");
+            }
+            if (withFilename)
+                return Path.Combine(targetFolder.FullName, path, filename);
+            return Path.Combine(targetFolder.FullName, path);
         }
-        return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests", filename);
+        if (withFilename)
+            return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests", filename);
+        return Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests");
     }
     public static (bool, FileInfo?, string) CreatePath(IQuestInfo info) => CreatePath((QuestInfo)info);
     public static (bool, FileInfo?, string) CreatePath(QuestInfo info, Quest? quest = null, bool dryrun = false)
@@ -547,14 +540,42 @@ internal sealed class QuestRegistry
         }
         return (true, file, $"File created{(dryrun ? " (dry run)" : "")}");
     }
-    public static string OpenEditorDescription
+
+    public static (bool Success, string Message) SaveUserPath(QuestInfo info, QuestRoot root)
     {
-        get => _L("Clicking this button writes the quest path to a file and opens it in your default\n" +
-                  "text editor. After making a change, click Reload Data below. To revert to the\n" +
-                  "official version, delete the file and click Reload Data again.\n" +
-                  "Left click: Open this quest in your default .json text editor\n" +
-                  "Right click: Open Quests folder");
+        string directory = Path.Combine(Svc.PluginInterface.GetPluginConfigDirectory(), "Quests");
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, GetFilename(info));
+
+        JsonObject serialized = (JsonObject)JsonSerializer.SerializeToNode(root, JsonOptions.Default)!;
+        JsonObject withSchema = new()
+        {
+            {
+                "$schema",
+                "https://qstxiv.github.io/schema/quest-v1.json"
+            }
+        };
+        foreach ((string key, JsonNode? value) in serialized)
+            withSchema.Add(key, value?.DeepClone());
+
+        using (FileStream stream = new(path, FileMode.Create))
+        using (Utf8JsonWriter writer = new(stream, new()
+        {
+            Encoder = JsonOptions.Default.Encoder,
+            Indented = JsonOptions.Default.WriteIndented
+        }))
+        {
+            withSchema.WriteTo(writer, JsonOptions.Default);
+        }
+
+        Svc.Log.Information($"Saved user quest path to {path}");
+        return (true, path);
     }
+
+    public static string OpenEditorDescription = _L("Clicking this button writes the quest path to a file and opens it in your default text editor.") +
+               _L("After making a change, click Reload Data below.") + "\n" +
+               _L("To revert to the official version, delete the file and click Reload Data again.") + "\n" +
+               _L("Left click: Open this quest in your default .json text editor\nRight click: Open Quests folder");
     public static (bool, string) OpenEditor(IQuestInfo info) => OpenEditor((QuestInfo)info);
     public static (bool, string) OpenEditor(QuestInfo info) => OpenEditor(GetFilename(info), info);
     public (bool, string) OpenEditor(ushort questId)

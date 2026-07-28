@@ -1,16 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Dalamud.Configuration;
 using Dalamud.Game.Text;
-using ECommons.DalamudServices;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Questionable.Model.Common;
 using Questionable.Model.Questing;
 using Questionable.Windows.Common;
-using static Questionable.Utils.LocalizeShortcut;
 using GrandCompany = FFXIVClientStructs.FFXIV.Client.UI.Agent.GrandCompany;
 namespace Questionable;
 
@@ -40,6 +37,13 @@ internal sealed class Configuration : IPluginConfiguration
     public PriorityConfiguration Priority { get; } = new();
     public PathDataConfiguration PathData { get; } = new();
     public int Version { get; set; } = PluginConfigVersion;
+
+    /// <summary>
+    /// One-time flag: the release that defaulted auto-redeem off forces it off once on first load,
+    /// then never touches <see cref="AdvancedConfiguration.AutoRedeemRewardItems"/> again.
+    /// </summary>
+    public bool AutoRedeemOffResetApplied { get; set; }
+
     // --- Persisted profile data ---
     /// <summary>
     /// Named profiles. Each profile is a sparse patch — only fields that differ from
@@ -207,6 +211,7 @@ internal sealed class Configuration : IPluginConfiguration
         public Job GatheringJob { get; set; } = Job.MIN;
         public EGearsetUpdateSource GearsetUpdateSource { get; set; } = EGearsetUpdateSource.Vanilla;
         public bool HideInAllInstances { get; set; } = true;
+        public bool UseQuestionableTheme { get; set; } = true;
         public bool UseEscToCancelQuesting { get; set; } = true;
         public bool ShowIncompleteSeasonalEvents { get; set; } = true;
         public bool SkipLowPriorityDuties { get; set; }
@@ -222,6 +227,8 @@ internal sealed class Configuration : IPluginConfiguration
         public string ReportMessage { get; set; } = "";
         public string DisplayName { get; set; } = "Anonymous";
         public string Language { get; set; } = "en";
+        public bool HideRemainingTasks { get; set; }
+        public bool ClaimMail { get; set; }
     }
 
     internal sealed class StopConfiguration
@@ -238,6 +245,7 @@ internal sealed class Configuration : IPluginConfiguration
         public int TargetLevel { get; set; } = 50;
         public bool RunCommandAfterStop { get; set; }
         public string CommandAfterStop { get; set; } = "/li auto";
+        public bool RemoveWhenCompleteConditionMet { get; set; }
     }
 
     internal sealed class DutyConfiguration
@@ -282,6 +290,7 @@ internal sealed class Configuration : IPluginConfiguration
         public bool ShowDirector { get; set; }
         public bool ShowActionManager { get; set; }
         public bool ShowNewGamePlus { get; set; }
+        public bool ShowHoveredItem { get; set; }
         public bool DisableAutoDutyBareMode { get; set; }
         public bool SkipAetherCurrents { get; set; }
         public bool SkipClassJobQuests { get; set; }
@@ -296,8 +305,29 @@ internal sealed class Configuration : IPluginConfiguration
         public bool NamazuPreferCraft { get; set; }
         public bool Debug { get; set; }
         public bool DebugLocalisation { get; set; }
-        public bool AutoRedeemRewardItems { get; set; } = true;
+
+        /// <summary>
+        ///     Gates the experimental questpath auto-generation (Journal Progress right-click). Generated paths
+        ///     are unreviewed machine drafts and must not be run unattended.
+        /// </summary>
+        public bool AllowPathGeneration { get; set; }
+        public bool AutoRedeemRewardItems { get; set; }
         public HashSet<uint> AutoRedeemItemBlacklist { get; set; } = [];
+    }
+
+    internal void ApplyAutoRedeemRewardItemsInitialReset()
+    {
+        _advanced.AutoRedeemRewardItems = false;
+
+        foreach (Dictionary<string, JObject> profile in Profiles.Values)
+        {
+            if (!profile.TryGetValue(nameof(Advanced), out JObject? advancedPatch))
+                continue;
+
+            advancedPatch.Remove(nameof(AdvancedConfiguration.AutoRedeemRewardItems));
+            if (!advancedPatch.HasValues)
+                profile.Remove(nameof(Advanced));
+        }
     }
 
     internal sealed class PriorityConfiguration
@@ -320,38 +350,15 @@ internal sealed class Configuration : IPluginConfiguration
         public DateTimeOffset? LastCheck { get; set; }
     }
     #endregion
-
-    internal enum EGearsetUpdateSource
+    public sealed class ElementIdNConverter : JsonConverter<ElementId>
     {
-        Vanilla,
-        Stylist
-    }
+        public override void WriteJson(JsonWriter writer, ElementId? value, JsonSerializer serializer) => writer.WriteValue(value?.ToString());
 
-    internal enum ECombatModule
-    {
-        None,
-        BossMod,
-        WrathCombo,
-        RotationSolverReborn
-    }
-}
-
-public sealed class ElementIdNConverter : JsonConverter<ElementId>
-{
-    public override void WriteJson(JsonWriter writer, ElementId? value, JsonSerializer serializer) => writer.WriteValue(value?.ToString());
-
-    public override ElementId? ReadJson(JsonReader reader, Type objectType, ElementId? existingValue,
-        bool hasExistingValue, JsonSerializer serializer)
-    {
-        string? value = reader.Value?.ToString();
-        return value != null ? ElementId.FromString(value) : null;
-    }
-}
-
-internal static class ConfigurationExtensions
-{
-    internal static void Save(this Configuration configuration)
-    {
-        Svc.PluginInterface.SavePluginConfig(configuration);
+        public override ElementId? ReadJson(JsonReader reader, Type objectType, ElementId? existingValue,
+            bool hasExistingValue, JsonSerializer serializer)
+        {
+            string? value = reader.Value?.ToString();
+            return value != null ? ElementId.FromString(value) : null;
+        }
     }
 }

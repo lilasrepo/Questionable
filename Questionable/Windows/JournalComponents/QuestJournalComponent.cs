@@ -1,25 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Numerics;
+﻿using System.Diagnostics.CodeAnalysis;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
-using ECommons.DalamudServices;
-using Questionable.Controller;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
-using Questionable.Validation;
-using Questionable.Windows.QuestComponents;
-using Questionable.Windows.Utils;
-using static Questionable.Utils.LocalizeShortcut;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.JournalComponents;
 
 internal sealed class QuestJournalComponent
@@ -32,12 +15,9 @@ internal sealed class QuestJournalComponent
     IDalamudPluginInterface pluginInterface,
     QuestJournalUtils questJournalUtils,
     QuestValidator questValidator,
-    MovementController movementController,
-    AetheryteFunctions aetheryteFunctions,
-    AetheryteData aetheryteData,
     QuestController questController,
     RedoUtil redoUtil,
-    IGameGui gameGui)
+    Configuration configuration)
 {
     private readonly Dictionary<JournalData.Category, JournalCounts> _categoryCounts = [];
     private readonly Dictionary<JournalData.Genre, JournalCounts> _genreCounts = [];
@@ -53,7 +33,7 @@ internal sealed class QuestJournalComponent
         if (!tab)
             return;
 
-        if (ImGui.CollapsingHeader(_L("Explanation")))
+        if (QstWidgets.SectionHeader(_L("Explanation"), "JournalExplanation", defaultOpen: false))
         {
             ImGui.Text(_L("The list below contains all quests that appear in your journal."));
             ImGui.BulletText(_L("'Supported' lists quests that Questionable can do for you"));
@@ -61,10 +41,7 @@ internal sealed class QuestJournalComponent
             ImGui.BulletText(
                 _L("Not all quests can be completed even if they're listed as available, e.g. starting city quest chains."));
             ImGui.BulletText(_L("The text in the Supported column indicates the last time a quest path was reported to work perfectly."));
-            // API12 lacks ImGui.TextColoredWrapped — bridge via PushStyleColor + TextWrapped.
-            ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudYellow);
-            ImGui.TextWrapped(_L("Quests can be added to Priority Quests, either individually or by group, with the right click menu."));
-            ImGui.PopStyleColor();
+            ImGui.TextColoredWrapped(QstTheme.Amber, _L("Quests can be added to Priority Quests, either individually or by group, with the right click menu."));
 
             ImGui.Spacing();
             ImGui.Separator();
@@ -158,7 +135,7 @@ internal sealed class QuestJournalComponent
         ImGui.TableNextColumn();
 
         string genreName = filter.Genre.Name;
-        if (questRegistry.TryGetQuest(filter.Quests.First().QuestId, out Quest? q))
+        if (questRegistry.TryGetQuest(filter.Quests[0].QuestId, out Quest? q))
         {
             RedoIndex redoIndex = redoUtil.GetChapter(q.Id.Value);
             if (redoIndex.Index != -1)
@@ -198,9 +175,9 @@ internal sealed class QuestJournalComponent
             {
                 lastCheckedLong = "\n" + _LF("Last checked: {0}", quest.Root.LastChecked);
                 int since = (int)quest.Root.LastChecked.Since(DateTime.Now)!.Value.TotalDays;
-                if (since < 7)
+                if (since >= 0 && since < 7)
                     lastChecked = $"{since}d";
-                else
+                else if (since >= 7)
                     lastChecked = $"{since / 7}w";
             }
             RedoIndex redoIndex = redoUtil.GetChapter(quest.Id.Value);
@@ -224,28 +201,7 @@ internal sealed class QuestJournalComponent
             questTooltipComponent.Draw(questInfo);
 
         if (ImGui.IsItemClicked())
-        {
-            var location = questInfo.IssuerLocation;
-            Svc.Log.Debug(location.ToString() ?? "SheetLevel()");
-            var mapLink = new MapLinkPayload(
-                location.Territory.RowId,
-                location.Map.RowId,
-                location.Game.X,
-                location.Game.Z
-            );
-            bool openedMap = gameGui.OpenMapWithMapLink(mapLink);
-            if (location.Territory.RowId.Equals(Svc.ClientState.TerritoryType))
-                movementController.NavigateTo(EMovementType.None, questInfo.IssuerDataId, location.Position, new()
-                {
-                    Fly = GameFunctions.IsFlyingUnlocked(location.Territory.RowId) ? true : false,
-                    Sprint = true,
-                    StopDistance = 20f,
-                    VerticalStopDistance = 5f,
-                });
-            else
-                if (aetheryteData.NearestAetheryteTo(location.Territory.RowId, location.Position) is { } aetheryte)
-                    aetheryteFunctions.TeleportAetheryte(aetheryte);
-        }
+            questJournalUtils.MoveToQuestLocation(questInfo);
 
         questJournalUtils.ShowContextMenu(questInfo, quest, nameof(QuestJournalComponent));
 
@@ -253,7 +209,7 @@ internal sealed class QuestJournalComponent
         {
             ImGui.SameLine();
             using (pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
-                ImGui.TextColored(ImGuiColors.DalamudYellow, FontAwesomeIcon.ExclamationCircle.ToIconString());
+                ImGui.TextColored(QstTheme.Amber, FontAwesomeIcon.ExclamationCircle.ToIconString());
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(_L("This quest is in Priority Quests."));
         }
@@ -271,64 +227,75 @@ internal sealed class QuestJournalComponent
         string reason = defaultReason = _L("<no reason specified>");
         if (quest != null)
             reason = (quest.Root.Comment ?? defaultReason).Split('\n', 2)[0];
+        string addendum = lastCheckedLong + (!reason.Equals(defaultReason, StringComparison.Ordinal) ? "\n" + _LF("Reason: {0}", reason) : "");
 
         if (QuestFunctions.IsQuestRemoved(questInfo.QuestId))
         {
-            if (uiUtils.ChecklistItem(lastChecked, ImGuiColors.DalamudGrey, FontAwesomeIcon.Minus))
-                ImGui.SetTooltip(_L("This quest is not available."));
+            if (uiUtils.ChecklistItem(lastChecked, QstTheme.TextMuted, FontAwesomeIcon.Minus))
+                ImGui.SetTooltip(_L("This quest is not available.") + addendum);
         }
         else if (fate)
         {
-            if (uiUtils.ChecklistItem(lastChecked, ImGuiColors.DalamudOrange, FontAwesomeIcon.ExclamationTriangle))
-                ImGui.SetTooltip(_L("This quest requires completing a FATE.") + lastCheckedLong);
+            if (uiUtils.ChecklistItem(lastChecked, QstTheme.Accent, FontAwesomeIcon.ExclamationTriangle))
+                ImGui.SetTooltip(_L("This quest requires completing a FATE.") + addendum);
         }
         else if (quest is { Root.Disabled: false })
         {
             List<ValidationIssue> issues = questValidator.GetIssues(quest.Id);
             if (issues.Any(x => x.Severity == EIssueSeverity.Error))
             {
-                if (uiUtils.ChecklistItem(lastChecked, ImGuiColors.DalamudRed, FontAwesomeIcon.ExclamationTriangle))
-                    ImGui.SetTooltip(_L("This quest could not be loaded."));
+                if (uiUtils.ChecklistItem(lastChecked, QstTheme.Danger, FontAwesomeIcon.ExclamationTriangle))
+                    ImGui.SetTooltip(_L("This quest could not be loaded.") + addendum);
             }
             else if (issues.Count > 0)
             {
-                if (uiUtils.ChecklistItem(lastChecked, ImGuiColors.ParsedBlue, FontAwesomeIcon.InfoCircle))
-                    ImGui.SetTooltip(_L("This quest had validation issues."));
+                if (uiUtils.ChecklistItem(lastChecked, QstTheme.Info, FontAwesomeIcon.InfoCircle))
+                    ImGui.SetTooltip(_L("This quest had validation issues.") + addendum);
             }
-            else if (uiUtils.ChecklistItem(lastChecked, true))
-                ImGui.SetTooltip(_L("This quest is supported.") + lastCheckedLong + (!reason.Equals(defaultReason, StringComparison.Ordinal) ? "\n" + _LF("Comment: {0}", reason) : ""));
+            else if (uiUtils.ChecklistItem(lastChecked, complete: true))
+                ImGui.SetTooltip(_L("This quest is supported.") + addendum);
         }
         else
         {
             if (quest == null)
                 reason = ("No quest path.");
-            if (uiUtils.ChecklistItem(lastChecked, false))
-                ImGui.SetTooltip(_L("This quest is not yet supported.") + lastCheckedLong + (!reason.Equals(defaultReason, StringComparison.Ordinal) ? "\n" + _LF("Reason: {0}", reason) : ""));
+            if (uiUtils.ChecklistItem(lastChecked, complete: false))
+                ImGui.SetTooltip(_L("This quest is not yet supported.") + addendum);
+        }
+        if (configuration.Stop.QuestsToStopWhenAccepted.Contains(questInfo.QuestId) || configuration.Stop.QuestsToStopAfter.Contains(questInfo.QuestId))
+        {
+            ImGui.SameLine();
+            using (pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
+                ImGui.TextColored(QstTheme.Amber, FontAwesomeIcon.StopCircle.ToIconString());
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(_L("This quest is in Stop Conditions."));
         }
 
         ImGui.TableNextColumn();
         (Vector4 color, FontAwesomeIcon icon, string text) = uiUtils.GetQuestStyle(questInfo.QuestId);
-        uiUtils.ChecklistItem(text, color, icon);
+        uiUtils.ChecklistItem(text.Split(',', 1)[0], color, icon);
     }
 
     internal static void DrawCount(int count, int total)
     {
         string len = 9999.ToString(CultureInfo.CurrentCulture);
-        ImGui.PushFont(UiBuilder.MonoFont);
+        using var monoFont = ImRaii.PushFont(UiBuilder.MonoFont);
 
         if (total == 0)
-            ImGui.TextColored(ImGuiColors.DalamudGrey, $"{" ".PadLeft(len.Length)} - {" ".PadLeft(len.Length)}");
+            ImGui.TextColored(QstTheme.TextMuted, $"{" ".PadLeft(len.Length)} - {" ".PadRight(len.Length)}");
+        else if (count == 0)
+        {
+            ImGui.TextUnformatted($"{"-".PadLeft(len.Length)} / {total.ToString(CultureInfo.CurrentCulture).PadRight(len.Length)}?");
+        }
         else
         {
             string text =
-                $"{count.ToString(CultureInfo.CurrentCulture).PadLeft(len.Length)} / {total.ToString(CultureInfo.CurrentCulture).PadLeft(len.Length)}";
+                $"{count.ToString(CultureInfo.CurrentCulture).PadLeft(len.Length)} / {total.ToString(CultureInfo.CurrentCulture).PadRight(len.Length)}";
             if (count == total)
-                ImGui.TextColored(ImGuiColors.ParsedGreen, text);
+                ImGui.TextColored(QstTheme.Success, text);
             else
                 ImGui.TextUnformatted(text);
         }
-
-        ImGui.PopFont();
     }
 
     public void UpdateFilter()

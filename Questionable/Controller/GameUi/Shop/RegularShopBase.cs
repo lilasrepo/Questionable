@@ -1,9 +1,8 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
+﻿using System.Diagnostics.CodeAnalysis;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
+using Dalamud.Game.NativeWrapper;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Questionable.Controller.GameUi.Shop.Model;
@@ -80,9 +79,10 @@ public class RegularShopBase
             short x = 0, y = 0;
             addon->GetPosition(&x, &y);
 
+            // api13: AtkUnitBase.GetSize takes short*, not ushort*.
             short width = 0, height = 0;
-            addon->GetSize(&width, &height, true);
-            x += width;
+            addon->GetSize(&width, &height, scaled: true);
+            x += (short)width;
 
             if (_parentWindow.Position is { } position && ((short)position.X != x || (short)position.Y != y))
                 _parentWindow.Position = new Vector2(x, y);

@@ -1,33 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.CodeAnalysis;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Ipc.Exceptions;
-using Dalamud.Plugin.Services;
-using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller.NavigationOverrides;
 using Questionable.Controller.Steps.Movement;
-using Questionable.Data;
-using Questionable.External;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Common;
 using Questionable.Model.Common.Converter;
 using Questionable.Model.Questing;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Controller;
 
+// TODO: refactor — heavy nesting (33 lines indented ≥6 levels, max indent 8 levels).
 internal sealed class MovementController
 (
     NavmeshIpc navmeshIpc,
@@ -40,6 +25,7 @@ internal sealed class MovementController
     AetheryteData aetheryteData,
     ICommandManager commandManager,
     IChatGui chatGui,
+    IServiceProvider serviceProvider,
     ILogger<MovementController> logger) : IDisposable
 {
     public const float DefaultVerticalInteractionDistance = 1.95f;
@@ -150,21 +136,21 @@ internal sealed class MovementController
                         Destination.NavmeshCalculations++;
                         Destination.PartialRoute.AddRange(navPoints);
                         logger.LogInformation("Running navmesh recalculation with fudged point ({From} to {To})",
-                            navPoints.Last(), Destination.Position);
+                            navPoints[^1], Destination.Position);
 
                         _cancellationTokenSource = new();
                         _cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(30));
                         _pathfindTask =
-                            navmeshIpc.Pathfind(navPoints.Last(), Destination.Position, Destination.IsFlying,
+                            navmeshIpc.Pathfind(navPoints[^1], Destination.Position, Destination.IsFlying,
                                 _cancellationTokenSource.Token);
                         return;
                     }
                 }
 
                 navPoints = Destination.PartialRoute.Concat(navPoints).ToList();
-                logger.LogInformation("Navigating via route: [{Route}]",
-                    string.Join(" → ",
-                        pathfindResult.Select(x => x.ToString("G", CultureInfo.InvariantCulture))));
+                logger.LogInformation("Navigating via route (XZ:{Distance}) [{Route}]",
+                    navPoints[0].DistanceTo_XZ(navPoints[^1]),
+                    string.Join(" → ", pathfindResult.Select(x => x.ToString("G5", CultureInfo.InvariantCulture))));
 
                 navmeshIpc.MoveTo(navPoints, Destination.IsFlying);
                 MovementStartedAt = DateTime.Now;
@@ -179,6 +165,13 @@ internal sealed class MovementController
                 ResetPathfinding();
                 throw new PathfindingFailedException(error);
             }
+        }
+
+        if (serviceProvider.GetRequiredService<QuestController>().IsQuestingStopped)
+        {
+            // if (EzThrottler.Throttle("qstwouldhavejumpedin", 5000))
+            //     logger.LogDebug("Questionable would have jumped in here to do something, but decided against it.");
+            return;
         }
 
         if (IsPathRunning && Destination != null)
@@ -196,7 +189,8 @@ internal sealed class MovementController
                 Restart(Destination);
                 return;
             }
-            else if (Destination is { IsFlying: true } && !condition[ConditionFlag.Mounted])
+
+            if (Destination is { IsFlying: true } && !condition[ConditionFlag.Mounted])
             {
                 logger.LogInformation("Flying but not mounted, restarting as non-flying path...");
                 Restart(Destination);
@@ -280,7 +274,7 @@ internal sealed class MovementController
 
     private bool IsOnFlightPath(Vector3 p)
     {
-        Vector3? pointOnFloor = navmeshIpc.GetPointOnFloor(p, true);
+        Vector3? pointOnFloor = navmeshIpc.GetPointOnFloor(p, unlandable: true);
         return pointOnFloor != null && Math.Abs(pointOnFloor.Value.Y - p.Y) > 0.5f;
     }
 
@@ -338,7 +332,7 @@ internal sealed class MovementController
         {
             startPosition = startPosition with { Y = startPosition.Y + 1f };
             logger.LogInformation("Using modified start position for flying pathfinding: {StartPosition}",
-                startPosition.ToString("G", CultureInfo.InvariantCulture));
+                startPosition.ToString("G5", CultureInfo.InvariantCulture));
         }
         else if (fly)
             // other positions have a (lesser) chance of starting from underground too, in which case pathfinding takes
@@ -357,7 +351,7 @@ internal sealed class MovementController
             to[^1] = to[^1] with { Y = to[^1].Y + 2.6f };
 
         NavigationOptions effective = options with { Fly = fly };
-        PrepareNavigation(type, dataId, to.Last(), effective, useNavmesh: false);
+        PrepareNavigation(type, dataId, to[^1], effective, useNavmesh: false);
 
         logger.LogInformation("Moving to {Destination}", Destination);
         navmeshIpc.MoveTo(to, fly);
@@ -397,7 +391,8 @@ internal sealed class MovementController
         float distance = Vector2.Distance(new(start.X, start.Z),
             new(nextWaypoint.X, nextWaypoint.Z));
         if (Destination.LastWaypoint == null ||
-            (Destination.LastWaypoint.Position - nextWaypoint).Length() > 0.1f)
+            (Destination.LastWaypoint.Position - nextWaypoint).Length() > 0.1f ||
+            gameFunctions.IsOccupied())
         {
             Destination.LastWaypoint = new(nextWaypoint)
             {
@@ -406,7 +401,8 @@ internal sealed class MovementController
             };
             return false;
         }
-        else if (Environment.TickCount64 - Destination.LastWaypoint.UpdatedAt > 500)
+
+        if (Environment.TickCount64 - Destination.LastWaypoint.UpdatedAt > 500)
         {
             // check whether we've made any progress of any kind
             if (Math.Abs(distance - Destination.LastWaypoint.Distance2DAtLastUpdate) < 0.5f)
@@ -432,15 +428,13 @@ internal sealed class MovementController
                 Destination.NavmeshCalculations = calculations + 1;
                 return true;
             }
-            else
-            {
-                Destination.LastWaypoint.Distance2DAtLastUpdate = distance;
-                Destination.LastWaypoint.UpdatedAt = Environment.TickCount64;
-                return false;
-            }
-        }
-        else
+
+            Destination.LastWaypoint.Distance2DAtLastUpdate = distance;
+            Destination.LastWaypoint.UpdatedAt = Environment.TickCount64;
             return false;
+        }
+
+        return false;
     }
 
     private void TriggerSprintIfNeeded(IEnumerable<Vector3> navPoints, Vector3 start)

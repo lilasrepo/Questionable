@@ -1,1 +1,1 @@
-- Feature: Change to debug mode text view -alydev
+- Bug fix: title bar minimize button -alydev

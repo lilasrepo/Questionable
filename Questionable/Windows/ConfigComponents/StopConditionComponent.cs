@@ -1,22 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Questionable.Controller;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Utils;
-using Questionable.Windows.QuestComponents;
-using Questionable.Windows.Utils;
-using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable.Windows.ConfigComponents;
 
 internal sealed class StopConditionComponent : ConfigComponent
@@ -28,6 +14,8 @@ internal sealed class StopConditionComponent : ConfigComponent
     private readonly QuestSelector _completeQuestSelector;
     private readonly QuestTooltipComponent _questTooltipComponent;
     private readonly UiUtils _uiUtils;
+    private Vector2 Size;
+    internal readonly IEnumerable<string> commandExceptions = ["UI stop", "ESC pressed"];
 
     public StopConditionComponent(
         IDalamudPluginInterface pluginInterface,
@@ -74,6 +62,8 @@ internal sealed class StopConditionComponent : ConfigComponent
         using ImRaii.IEndObject tab = ImRaii.TabItem(_L("Stop") + "###StopConditionns");
         if (!tab)
             return;
+        Size = ImGui.GetWindowContentRegionMax();
+        var wrap = ImRaii.TextWrapPos(Size.X + 10);
 
         bool runCommand = Configuration.Stop.RunCommandAfterStop;
         if (ImGui.Checkbox(_L("Run command when Questionable finishes automatic questing"), ref runCommand))
@@ -81,8 +71,6 @@ internal sealed class StopConditionComponent : ConfigComponent
             Configuration.Stop.RunCommandAfterStop = runCommand;
             Save();
         }
-        ImGui.SameLine();
-        ImGui.TextColored(ImGuiColors.DalamudRed, _L("Experimental feature"));
         string command = Configuration.Stop.CommandAfterStop;
         if (ImGui.InputText(_L("Command"), ref command, 128))
         {
@@ -95,6 +83,7 @@ internal sealed class StopConditionComponent : ConfigComponent
                 Configuration.Stop.CommandAfterStop = "/li auto";
             Save();
         }
+        ImGuiComponentsLocal.HelpMarker("Excludes these stop reasons:", commandExceptions.ToArray());
 
         ImGui.Separator();
 
@@ -144,6 +133,13 @@ internal sealed class StopConditionComponent : ConfigComponent
 
             ImGui.Separator();
 
+            bool removeWhenCompleteConditionMet = Configuration.Stop.RemoveWhenCompleteConditionMet;
+            if (ImGui.Checkbox(_L("Remove from list after complete"), ref removeWhenCompleteConditionMet))
+            {
+                Configuration.Stop.RemoveWhenCompleteConditionMet = removeWhenCompleteConditionMet;
+                Save();
+            }
+
             DrawQuestStopSection(
                 _L("Stop when completing any of the quests selected below:"),
                 "Complete",
@@ -183,8 +179,6 @@ internal sealed class StopConditionComponent : ConfigComponent
 
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                     ImGui.SetTooltip(_L("Hold CTRL to enable this button."));
-
-                ImGui.Separator();
             }
 
             Quest? itemToRemove = null;

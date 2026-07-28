@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Starr",
-  "LastChecked": {"Username": "alydev", "Date": "2026-06-05"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-26"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -22,7 +22,6 @@
           ],
           "SkipConditions": {
             "AetheryteShortcutIf": {
-              "InSameTerritory": true,
               "InTerritory": [
                 144
               ]
@@ -44,11 +43,6 @@
           "TerritoryId": 148,
           "InteractionType": "CompleteQuest",
           "AetheryteShortcut": "Central Shroud - Bentbranch Meadows",
-          "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            }
-          },
           "Fly": true,
           "NextQuestId": 565
         }

@@ -1,19 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Plugin;
-using Dalamud.Plugin.Ipc;
+﻿using Dalamud.Plugin.Ipc;
 using ECommons.ExcelServices;
 using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
-using Questionable.Controller;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Questionable.Windows;
-using Questionable.Windows.QuestComponents;
-using Questionable.Windows.Utils;
 namespace Questionable.External;
 
 internal sealed class QuestionableIpc : IDisposable
@@ -101,10 +89,10 @@ internal sealed class QuestionableIpc : IDisposable
             [.. eventInfoComponent.GetCurrentlyActiveEventQuests().Select(q => q.ToString())]);
 
         _startQuest = pluginInterface.GetIpcProvider<string, bool>(IpcStartQuest);
-        _startQuest.RegisterFunc(questId => StartQuest(questId, false));
+        _startQuest.RegisterFunc(questId => StartQuest(questId, single: false));
 
         _startSingleQuest = pluginInterface.GetIpcProvider<string, bool>(IpcStartSingleQuest);
-        _startSingleQuest.RegisterFunc(questId => StartQuest(questId, true));
+        _startSingleQuest.RegisterFunc(questId => StartQuest(questId, single: true));
 
         _isQuestLocked = pluginInterface.GetIpcProvider<string, bool>(IpcIsQuestLocked);
         _isQuestLocked.RegisterFunc(IsQuestLocked);
@@ -237,14 +225,14 @@ internal sealed class QuestionableIpc : IDisposable
         return true;
     }
 
-    private (bool,string) IsQuestLockedReason(string questId)
+    private (bool, string) IsQuestLockedReason(string questId)
     {
         _logger.LogDebug("IsQuestLockedReason({QuestId})", questId);
         if (ElementId.TryFromString(questId, out ElementId? elementId) && elementId != null &&
             _questRegistry.TryGetQuest(elementId, out Quest? _))
         {
             (var isLocked, string[]? reasons) = _questFunctions.IsQuestLocked(elementId);
-            return (isLocked, reasons != null ? string.Join(',',reasons) : "");
+            return (isLocked, reasons != null ? string.Join(',', reasons) : "");
         }
 
         return (true, "");

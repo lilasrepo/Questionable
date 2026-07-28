@@ -1,7 +1,8 @@
-{
+﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Gezah",
   "Comment": "Crafted Item:\n 1x Steel Ingot HQ\nAutocraft requires:\n 2x Iron Ore,\n 1x Bomb Ash",
+  "LastChecked": {"Username": "okonomiyaki", "Date": "2026-07-10"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -39,6 +40,7 @@
           "TerritoryId": 128,
           "ItemId": 5058,
           "ItemCount": 1,
+          "ItemQuality": "HQ",
           "SkipConditions": {
             "StepIf": {
               "Item": {
@@ -55,7 +57,11 @@
             "Z": 211.5968
           },
           "TerritoryId": 128,
-          "InteractionType": "CompleteQuest"
+          "InteractionType": "CompleteQuest",
+          "AethernetShortcut": [
+            "[Limsa Lominsa] Aetheryte Plaza",
+            "[Limsa Lominsa] The Aftcastle"
+          ]
         }
       ]
     }

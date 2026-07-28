@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -23,7 +23,7 @@ using Questionable.Model.Common;
 using Questionable.Model.Gathering;
 using Questionable.Model.Questing;
 using Questionable.Utils;
-using Quest = Questionable.Model.Quest;
+using Quest = Questionable.Domain.Quest;
 using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Questionable.Controller.GameUi;
@@ -111,8 +111,8 @@ internal sealed class InteractionUiController : IDisposable
 
         unsafe
         {
-            if (_gameGui.TryGetAddonByName("RhythmAction", out AtkUnitBase* addon))
-                addon->Close(true);
+            if (gameGui.TryGetAddonByName("RhythmAction", out AtkUnitBase* addon))
+                addon->Close(fireCallback: true);
         }
     }
 

@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
 using ECommons.ExcelServices;
-using static Questionable.Utils.LocalizeShortcut;
 
 namespace Questionable.Data;
 
@@ -19,8 +16,7 @@ internal static class JobExtensions
     public static bool HasBaseClass(this Job classJob)
     {
         return Enum.GetValues<Job>()
-            .Where(x => x.IsClass())
-            .Any(x => x.AsJob() == classJob);
+            .Any(x => x.IsClass() && x.AsJob() == classJob);
     }
 
     public static Job AsJob(this Job classJob)

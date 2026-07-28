@@ -1,21 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Plugin.Services;
-using ECommons.ExcelServices;
+﻿using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
-using Microsoft.Extensions.Logging;
-using Questionable.Data;
-using Questionable.External;
-using Questionable.Functions;
-using Questionable.Model;
 using Questionable.Model.Questing;
-using Mount = Questionable.Controller.Steps.Common.Mount;
-using Quest = Questionable.Model.Quest;
+using Questionable.Controller.Steps.Common;
+using Quest = Questionable.Domain.Quest;
 
 namespace Questionable.Controller.Steps.Shared;
 
@@ -30,7 +21,7 @@ internal static class Craft
 
             return
             [
-                new Mount.UnmountTask(),
+                new MountStep.UnmountTask(),
                 new CraftTask(quest, step.ItemId, step.ItemCount)
             ];
         }
@@ -204,10 +195,10 @@ internal static class Craft
             InventoryManager* inventoryManager = InventoryManager.Instance();
             return _itemQuality switch
             {
-                EItemQuality.NQ => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, false, false),
-                EItemQuality.HQ => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, true, false),
-                EItemQuality.Any => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, false, false)
-                                    + inventoryManager->GetInventoryItemCount(Task.ItemId.Value, true, false),
+                EItemQuality.NQ => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, isHq: false, checkEquipped: false),
+                EItemQuality.HQ => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, isHq: true, checkEquipped: false),
+                EItemQuality.Any => inventoryManager->GetInventoryItemCount(Task.ItemId.Value, isHq: false, checkEquipped: false)
+                                    + inventoryManager->GetInventoryItemCount(Task.ItemId.Value, isHq: true, checkEquipped: false),
                 var _ => 0
             };
         }

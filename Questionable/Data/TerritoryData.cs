@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
 using Dalamud.Game;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Lumina.Excel.Sheets;
+using Questionable.Model.Common;
 using Questionable.Model.Questing;
+using Quest = Lumina.Excel.Sheets.Quest;
 namespace Questionable.Data;
 
 internal sealed class TerritoryData
@@ -74,9 +71,9 @@ internal sealed class TerritoryData
     {
         string? territoryName = GetName(territoryId);
         if (territoryName != null)
-            return string.Create(CultureInfo.InvariantCulture, $"{territoryName} ({territoryId})");
-        else
-            return territoryId.ToString(CultureInfo.InvariantCulture);
+            return $"{territoryName} ({territoryId})";
+
+        return territoryId.ToString(CultureInfo.InvariantCulture);
     }
 
     public bool CanUseMount(uint territoryId) => _territoriesWithMount.Contains(territoryId);
@@ -97,11 +94,9 @@ internal sealed class TerritoryData
     {
         if (_questBattlesToContentFinderCondition.TryGetValue((questId, index), out uint cfcId))
             return _contentFinderConditions.TryGetValue(cfcId, out contentFinderConditionData);
-        else
-        {
-            contentFinderConditionData = null;
-            return false;
-        }
+
+        contentFinderConditionData = null;
+        return false;
     }
 
     public IEnumerable<(ElementId QuestId, byte Index, ContentFinderConditionData Data)> GetAllQuestsWithQuestBattles() => _questBattlesToContentFinderCondition.Select(x => (x.Key.QuestId, x.Key.Index, _contentFinderConditions[x.Value]));
@@ -131,9 +126,12 @@ internal sealed class TerritoryData
     {
         if (questBattleId >= 5000)
             return dataManager.GetExcelSheet<InstanceContent>().GetRow(questBattleId).ContentFinderCondition.RowId;
-        else
-            // B1: API12 QuestBattleResident lacks SoloDuty column (game-7.5). Cannot resolve CFC; return 0.
-            return 0;
+
+        // B1(api13): this Lumina's QuestBattleResident has no SoloDuty column (Cecil against
+        // TC_ok/_dalamud_api13/Lumina.Excel.dll shows only RowId/Unknown0). Returning 0 makes the
+        // caller treat sub-5000 quest battles as having no linked ContentFinderCondition, which is
+        // the same shape as an unknown id rather than a wrong one.
+        return 0;
     }
 
     public sealed record ContentFinderConditionData
@@ -142,11 +140,13 @@ internal sealed class TerritoryData
         string Name,
         uint TerritoryId,
         ushort RequiredItemLevel,
-        byte ClassJobLevelSync)
+        byte ClassJobLevelSync,
+        EContentType? ContentType)
     {
         public ContentFinderConditionData(ContentFinderCondition condition, ClientLanguage clientLanguage)
             : this(condition.RowId, FixName(condition.Name.ToDalamudString().ToString(), clientLanguage),
-                condition.TerritoryType.RowId, condition.ItemLevelRequired, condition.ClassJobLevelSync)
+                condition.TerritoryType.RowId, condition.ItemLevelRequired, condition.ClassJobLevelSync,
+                (EContentType?)condition.ContentType.ValueNullable?.RowId)
         {
         }
     }

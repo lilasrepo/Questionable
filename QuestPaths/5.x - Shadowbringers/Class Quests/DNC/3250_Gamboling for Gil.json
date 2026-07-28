@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "Fifi",
-  "LastChecked": {"Username": "Logos", "Date": "2026-06-15"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-07-27"},
   "QuestSequence": [
     {
       "Sequence": 0,
@@ -12,9 +12,6 @@
           "ItemId": 27358,
           "AetheryteShortcut": "Limsa Lominsa",
           "SkipConditions": {
-            "AetheryteShortcutIf": {
-              "InSameTerritory": true
-            },
             "StepIf": {
               "Item": {
                 "NotInInventory": true
@@ -24,7 +21,8 @@
         },
         {
           "TerritoryId": 129,
-          "InteractionType": "CreateGearset"
+          "InteractionType": "CreateGearset",
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "TerritoryId": 129,
@@ -40,11 +38,13 @@
         },
         {
           "TerritoryId": 129,
-          "InteractionType": "EquipRecommended"
+          "InteractionType": "EquipRecommended",
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "TerritoryId": 129,
-          "InteractionType": "UpdateGearset"
+          "InteractionType": "UpdateGearset",
+          "SkipConditions": {"StepIf": {"ExtraCondition": "NewGamePlus"}}
         },
         {
           "DataId": 1028724,

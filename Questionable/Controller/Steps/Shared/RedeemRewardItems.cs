@@ -1,19 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Plugin.Services;
+﻿using Dalamud.Game.ClientState.Conditions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
-using Questionable.Data;
-using Questionable.Functions;
-using Questionable.Model;
+using Questionable.Model.Common;
 using Questionable.Model.Questing;
-using Quest = Questionable.Model.Quest;
-using Mount = Questionable.Controller.Steps.Common.Mount;
+using Questionable.Controller.Steps.Common;
+using Quest = Questionable.Domain.Quest;
 namespace Questionable.Controller.Steps.Shared;
 
 internal static class RedeemRewardItems
 {
+    // Items we've already tried this run, keyed by item id -> stack size at the time we used it.
+    // Kept in memory only (not persisted, not user-visible): if an item is still present with the same
+    // quantity we attempted, we skip it instead of retrying forever (coffers always report as locked).
+    // A changed quantity (e.g. a freshly obtained coffer of the same type) lets it be tried again.
+    private static readonly Dictionary<uint, int> AttemptedItems = [];
+
+    internal static void ResetAttemptedItems() => AttemptedItems.Clear();
+
     internal sealed class Factory(QuestData questData, IDataManager dataManager) : ITaskFactory
     {
         public IEnumerable<ITask> CreateAllTasks(Quest quest, QuestSequence sequence, QuestStep step)
@@ -48,9 +51,15 @@ internal static class RedeemRewardItems
                 if (blacklist.Contains(itemReward.ItemId))
                     return;
 
-                if (inventoryManager->GetInventoryItemCount(itemReward.ItemId) > 0 &&
-                    !itemReward.IsUnlocked())
-                    tasks.Add(new Task(itemReward));
+                int count = inventoryManager->GetInventoryItemCount(itemReward.ItemId);
+                if (count <= 0 || itemReward.IsUnlocked())
+                    return;
+
+                // Already tried this exact stack once - don't loop on it.
+                if (AttemptedItems.TryGetValue(itemReward.ItemId, out int attemptedCount) && attemptedCount == count)
+                    return;
+
+                tasks.Add(new Task(itemReward));
             }
 
             foreach (ItemReward itemReward in questData.RedeemableItems)
@@ -90,7 +99,7 @@ internal static class RedeemRewardItems
             }
         }
 
-        return tasks.Count != 0 ? [new Mount.UnmountTask(), ..tasks] : tasks;
+        return tasks.Count != 0 ? [new MountStep.UnmountTask(), .. tasks] : tasks;
     }
 
     internal sealed record Task(ItemReward ItemReward) : ITask
@@ -150,6 +159,9 @@ internal static class RedeemRewardItems
 
                 if (!gameFunctions.UseItem(Task.ItemReward.ItemId))
                     return ETaskResult.StillRunning;
+
+                // Record the stack we just acted on so we don't retry this exact stack forever.
+                AttemptedItems[Task.ItemReward.ItemId] = _itemCountBeforeUse;
 
                 TimeSpan castTime = Task.ItemReward.CastTime;
                 if (castTime < MinimumCastTime)
