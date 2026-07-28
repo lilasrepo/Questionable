@@ -1,5 +1,5 @@
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Pictomancy.DXDraw;
 using Pictomancy.ImGuiDraw;
 using System.Drawing;
@@ -46,7 +46,9 @@ public class PctDrawList : IDisposable
 
         PctTexture texture = DrawToTexture();
         _drawList.AddImage(
-            texture.TextureId,
+            // api13: AddImage takes ImTextureID; nint is not implicitly convertible,
+            // but ImTextureID has an IntPtr constructor.
+            new ImTextureID(texture.TextureId),
             ImGuiHelpers.MainViewport.Pos,
             ImGuiHelpers.MainViewport.Pos + texture.Size);
     }

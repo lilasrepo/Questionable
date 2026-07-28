@@ -6,7 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;

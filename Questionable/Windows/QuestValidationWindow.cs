@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;

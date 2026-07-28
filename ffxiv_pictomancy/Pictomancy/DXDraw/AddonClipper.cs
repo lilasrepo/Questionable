@@ -347,7 +347,7 @@ internal class AddonClipper
 
     private unsafe void ClipNamePlates()
     {
-        var addon = (AtkUnitBase*)PictoService.GameGui.GetAddonByName("NamePlate");
+        var addon = (AtkUnitBase*)PictoService.GameGui.GetAddonByName("NamePlate").Address;
         if(addon->IsVisible && addon->UldManager.LoadedState == AtkLoadState.Loaded && addon->IsFullyLoaded())
         {
             {
@@ -699,7 +699,7 @@ internal class AddonClipper
 
     private unsafe AtkUnitBase* GetVisibleAddonOrNull(string name, int expectedNodeCount = 0)
     {
-        var addon = (AtkUnitBase*)PictoService.GameGui.GetAddonByName(name);
+        var addon = (AtkUnitBase*)PictoService.GameGui.GetAddonByName(name).Address;
         if (addon == null || !addon->IsVisible || addon->VisibilityFlags != 0 || addon->UldManager.NodeListCount < expectedNodeCount) return null;
         return addon;
     }

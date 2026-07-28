@@ -247,7 +247,9 @@ public unsafe readonly struct ExtendedBaseParam(ExcelPage page, uint offset, uin
     public Collection<ushort> EquipSlotCategoryPct =>
         new(page, offset, offset, &EquipSlotCategoryPctCtor, ParamCount);
 
-    // API12 IExcelRow<T> doesn't have ExcelPage/RowOffset properties (added in API15).
+    // porting-note(api13): official api13 Lumina dropped ExcelPage/RowOffset from IExcelRow<T>
+    // (they survive only on RawRow/RawSubrow) -- explicit implementations are CS0539 here.
+    // Upstream still declares them against its newer Lumina, so re-drop after every refresh.
 
     private static ushort EquipSlotCategoryPctCtor(ExcelPage page, uint parentOffset, uint offset, uint i) => i == 0 ? (ushort)0 : page.ReadUInt16(offset + 8 + (i - 1) * 2);
 

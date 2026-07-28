@@ -4,7 +4,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Pictomancy.DXDraw;
 using Pictomancy.VfxDraw;
 
@@ -115,8 +115,8 @@ public class PictoService
 
     private unsafe static bool IsFaded()
     {
-        var fadeMiddleWidget = (AtkUnitBase*)GameGui.GetAddonByName("FadeMiddle");
-        var fadeBlackWidget = (AtkUnitBase*)GameGui.GetAddonByName("FadeBlack");
+        var fadeMiddleWidget = (AtkUnitBase*)GameGui.GetAddonByName("FadeMiddle").Address;
+        var fadeBlackWidget = (AtkUnitBase*)GameGui.GetAddonByName("FadeBlack").Address;
         return fadeMiddleWidget != null && fadeMiddleWidget->IsVisible ||
             fadeBlackWidget != null && fadeBlackWidget->IsVisible;
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
@@ -385,7 +385,7 @@ internal sealed class PluginConfigComponent
         {
             // API12 ImGui.ImageButton has 7 args (uv0/uv1 explicit) vs API15's 5-arg overload.
             return ImGui.ImageButton(
-                logo.ImGuiHandle,
+                logo.Handle,
                 new(size.Scale(), size.Scale()),
                 Vector2.Zero,
                 Vector2.One,

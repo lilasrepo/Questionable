@@ -167,7 +167,7 @@ internal static class EquipItem
                         sourceInventoryType, sourceSlot, InventoryType.EquippedItems, targetSlot);
 
                     int result = inventoryManager->MoveItemSlot(sourceInventoryType, sourceSlot,
-                        InventoryType.EquippedItems, targetSlot, (byte)1);
+                        InventoryType.EquippedItems, targetSlot, true);
                     logger.LogInformation("MoveItemSlot result: {Result}", result);
                     return;
                 }

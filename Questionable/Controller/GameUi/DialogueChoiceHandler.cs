@@ -102,7 +102,7 @@ internal sealed class DialogueChoiceHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandleSelectString((AddonSelectString*)args.Addon, checkAllSteps: false);
+        HandleSelectString((AddonSelectString*)args.Addon.Address, checkAllSteps: false);
     }
 
     private unsafe void CutsceneSelectStringPostSetup(AddonEvent type, AddonArgs args)
@@ -110,7 +110,7 @@ internal sealed class DialogueChoiceHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandleCutsceneSelectString((AddonCutSceneSelectString*)args.Addon, checkAllSteps: false);
+        HandleCutsceneSelectString((AddonCutSceneSelectString*)args.Addon.Address, checkAllSteps: false);
     }
 
     private unsafe void SelectIconStringPostSetup(AddonEvent type, AddonArgs args)
@@ -118,7 +118,7 @@ internal sealed class DialogueChoiceHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandleSelectIconString((AddonSelectIconString*)args.Addon, checkAllSteps: false);
+        HandleSelectIconString((AddonSelectIconString*)args.Addon.Address, checkAllSteps: false);
     }
 
     /// <summary>

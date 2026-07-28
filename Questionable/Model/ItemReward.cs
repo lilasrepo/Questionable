@@ -66,6 +66,7 @@ public abstract record ItemReward(ItemRewardDetails Item)
         return null;
     }
     public abstract bool IsUnlocked();
+    public override string ToString() => $"{nameof(Type)}: {Name}";
 }
 
 public sealed record MountReward(ItemRewardDetails Item, uint MountId)

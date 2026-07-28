@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 namespace Questionable.Windows.Common;
 

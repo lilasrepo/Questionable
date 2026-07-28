@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin.Services;
 using Dalamud.Game.ClientState.Objects;
 using ECommons;

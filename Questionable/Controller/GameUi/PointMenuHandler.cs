@@ -54,7 +54,7 @@ internal sealed class PointMenuHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandlePointMenu((AtkUnitBase*)args.Addon);
+        HandlePointMenu((AtkUnitBase*)args.Addon.Address);
     }
 
     /// <summary>

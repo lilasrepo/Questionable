@@ -114,12 +114,12 @@ internal sealed class YesNoChoiceHandler : IDisposable
         if (!ShouldHandleUiInteractions)
             return;
 
-        HandleSelectYesno((AddonSelectYesno*)args.Addon, checkAllSteps: false);
+        HandleSelectYesno((AddonSelectYesno*)args.Addon.Address, checkAllSteps: false);
     }
 
     private unsafe void DifficultySelectYesNoPostSetup(AddonEvent type, AddonArgs args)
     {
-        HandleDifficultySelectYesNo((AtkUnitBase*)args.Addon, checkAllSteps: false);
+        HandleDifficultySelectYesNo((AtkUnitBase*)args.Addon.Address, checkAllSteps: false);
     }
 
     /// <summary>

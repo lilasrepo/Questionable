@@ -21,11 +21,11 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DalamudLibPath>$(MSBuildThisFileDirectory)..\..\..\TC_ok\_dalamud_api12\</DalamudLibPath>
+        <DalamudLibPath>$(MSBuildThisFileDirectory)..\..\..\TC_ok\_dalamud_api13\</DalamudLibPath>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="DalamudPackager" Version="2.1.13" />
+        <PackageReference Include="DalamudPackager" Version="13.1.0" />
         <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" ExcludeAssets="runtime" />
         <PackageReference Include="JsonSchema.Net" Version="7.3.4" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
@@ -57,8 +57,12 @@
             <HintPath>$(DalamudLibPath)Dalamud.Common.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="ImGui.NET">
-            <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
+        <Reference Include="Dalamud.Bindings.ImGui">
+            <HintPath>$(DalamudLibPath)Dalamud.Bindings.ImGui.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Dalamud.Bindings.ImPlot">
+            <HintPath>$(DalamudLibPath)Dalamud.Bindings.ImPlot.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGuiScene">

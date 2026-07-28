@@ -152,7 +152,7 @@ internal static class UnequipItem
                     InventoryType.EquippedItems, equippedSlot, armoryType, targetSlot);
 
                 int result = inventoryManager->MoveItemSlot(InventoryType.EquippedItems, equippedSlot,
-                    armoryType, targetSlot, (byte)1);
+                    armoryType, targetSlot, true);
                 logger.LogInformation("MoveItemSlot result: {Result}", result);
                 return;
             }

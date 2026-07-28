@@ -93,7 +93,9 @@ public readonly struct QuestDialogueText(ExcelPage page, uint offset, uint row) 
     public ReadOnlySeString Key => page.ReadString(offset, offset);
     public ReadOnlySeString Value => page.ReadString(offset + 4, offset);
 
-    // API12 IExcelRow<T> doesn't have ExcelPage/RowOffset properties (added in API15).
+    // porting-note(api13): official api13 Lumina dropped ExcelPage/RowOffset from IExcelRow<T>
+    // (they survive only on RawRow/RawSubrow) -- explicit implementations are CS0539 here.
+    // Upstream still declares them against its newer Lumina, so re-drop after every refresh.
 
     static QuestDialogueText IExcelRow<QuestDialogueText>.Create(ExcelPage page, uint offset, uint row) => new(page, offset, row);
 }
