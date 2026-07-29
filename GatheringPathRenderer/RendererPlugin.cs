@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,6 +32,7 @@ public sealed class RendererPlugin : IDalamudPlugin
 
     private readonly EditorCommands _editorCommands;
     private readonly EditorWindow _editorWindow;
+    private readonly Configuration _configuration;
 
     private readonly IObjectTable _objectTable;
 
@@ -67,6 +68,7 @@ public sealed class RendererPlugin : IDalamudPlugin
         { IsOpen = true };
         _windowSystem.AddWindow(configWindow);
         _windowSystem.AddWindow(_editorWindow);
+        _configuration = configuration;
 
         _ = framework.RunOnFrameworkThread(() =>
         {
@@ -335,7 +337,11 @@ public sealed class RendererPlugin : IDalamudPlugin
                             locationOverride?.MaximumDistance ?? x.CalculateMaximumDistance(),
                             minimumAngle, maximumAngle, color | 0xFF000000);
 
-                        drawList.AddText(x.Position, isUnsaved ? 0xFFFF0000 : 0xFFFFFFFF, $"{location.Root.Groups.IndexOf(group)} // {node.DataId} / {node.Locations.IndexOf(x)} || {minimumAngle}, {maximumAngle}", 1.0f);
+                        // Upstream's new ShowOverlay gate is taken; the trailing scale argument is NOT
+                        // upstream cruft -- this drawList is Pictomancy's PctDrawList, whose
+                        // AddText(Vector3, uint, string, float scale) has no 3-arg overload (CS7036).
+                        if (_configuration.ShowOverlay)
+                            drawList.AddText(x.Position, isUnsaved ? 0xFFFF0000 : 0xFFFFFFFF, $"{location.Root.Groups.IndexOf(group)} // {node.DataId} / {node.Locations.IndexOf(x)} || {minimumAngle}, {maximumAngle}", 1.0f);
 #if false
                         var a = GatheringMath.CalculateLandingLocation(x, 0, 0);
                         var b = GatheringMath.CalculateLandingLocation(x, 1, 1);
