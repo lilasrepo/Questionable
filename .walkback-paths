@@ -18,3 +18,8 @@ Questionable/Questionable.json
 Questionable/Utils/LocalizeShortcut.cs
 Questionable/Domain/QuestInfo.cs
 Questionable/Domain/ItemReward.cs
+# Pinned 2026-08-01: this file SHADOWS TC_forward/Directory.Build.props, so it must keep the
+# PathMap / SourceLink / GitThisAssembly hygiene block. Without the pin, take-theirs restores
+# upstream's analyzer-only version and the plugin silently ships 31 absolute local paths again
+# (baked [CallerFilePath] literals) plus a SourceLink blob. See commit 336e4b26.
+Directory.Build.props
