@@ -335,7 +335,6 @@ internal sealed class PriorityWindow : LWindow
 
         ImGui.TextColoredWrapped(QstTheme.Danger, _L("Selecting a preset will override your current priority list and activate the preset. " +
             "You can save your current list as a preset by entering a name below and selecting Save."));
-        ImGui.PopStyleColor();
 
         ImGui.Spacing();
 

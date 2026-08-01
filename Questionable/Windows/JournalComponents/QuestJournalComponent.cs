@@ -135,7 +135,7 @@ internal sealed class QuestJournalComponent
         ImGui.TableNextColumn();
 
         string genreName = filter.Genre.Name;
-        if (questRegistry.TryGetQuest(filter.Quests[0].QuestId, out Quest? q))
+        if (filter.Genre.Id != JournalData.InstantQuests && questRegistry.TryGetQuest(filter.Quests[0].QuestId, out Quest? q))
         {
             RedoIndex redoIndex = redoUtil.GetChapter(q.Id.Value);
             if (redoIndex.Index != -1)
@@ -273,7 +273,8 @@ internal sealed class QuestJournalComponent
 
         ImGui.TableNextColumn();
         (Vector4 color, FontAwesomeIcon icon, string text) = uiUtils.GetQuestStyle(questInfo.QuestId);
-        uiUtils.ChecklistItem(text.Split(',', 1)[0], color, icon);
+        if (uiUtils.ChecklistItem(text.Split(':')[0], color, icon))
+            ImGui.SetTooltip(text);
     }
 
     internal static void DrawCount(int count, int total)

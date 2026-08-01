@@ -1,2 +1,1 @@
-- Change: Stop condition quick buttons will also prevent sidetracking to accept job quests -alydev
-- Change: step number in active quest component now starts from 1 instead of 0 -alydev
+- Feature: "no supported quests" view now shows in the tooltip if the next MSQ is accepted but hidden -alydev

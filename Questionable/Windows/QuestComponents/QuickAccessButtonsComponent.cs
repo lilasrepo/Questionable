@@ -3,8 +3,6 @@ using System.Text.Json.Nodes;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
 using Questionable.Controller.Steps.Shared;
 using Questionable.Model.Questing;
 using Questionable.Windows.Common.Ui;
@@ -28,15 +26,11 @@ internal sealed class QuickAccessButtonsComponent
 
     public void Draw()
     {
-        DrawPriorityQuestsButton();
-        ImGui.SameLine();
-        DrawJournalProgressButton();
-        ImGui.SameLine();
         DrawReloadDataButton();
         ImGui.SameLine();
         DrawRebuildNavmeshButton();
         ImGui.SameLine();
-        DrawTroubleshootingButton(questController.CurrentQuest, questController.IsRunning);
+        DrawClearVBMMapsButton();
 
         if (pluginInterface.IsDev)
         {
@@ -45,43 +39,66 @@ internal sealed class QuickAccessButtonsComponent
         }
     }
 
-    private void DrawPriorityQuestsButton()
+    internal void DrawPriorityQuestsButton(bool showLabel = false)
     {
         if (QstWidgets.RailButton(FontAwesomeIcon.ExclamationCircle,
+                _L("Priority Quests"),
                 _L("Configure priority quests which will be done as soon as possible."),
-                enabled: objectTable[0] != null))
+                enabled: objectTable[0] != null,
+                showLabel: showLabel))
             priorityWindow.ToggleOrUncollapse();
     }
 
-    private void DrawRebuildNavmeshButton()
+    internal void DrawRebuildNavmeshButton(bool showLabel = false)
     {
         bool isNavmeshAvailable = commandManager.Commands.ContainsKey("/vnav");
         string tooltip = isNavmeshAvailable
             ? _L("Hold CTRL to enable this button. Rebuilding the navmesh will take some time.")
             : _L("vnavmesh is not available. Please install it first.");
-        if (QstWidgets.RailButton(FontAwesomeIcon.GlobeEurope, tooltip,
-                enabled: isNavmeshAvailable && ImGui.IsKeyDown(ImGuiKey.ModCtrl)))
+        if (QstWidgets.RailButton(FontAwesomeIcon.GlobeEurope, _L("Rebuild Navmesh"), tooltip,
+                enabled: isNavmeshAvailable && ImGui.IsKeyDown(ImGuiKey.ModCtrl),
+                showLabel: showLabel))
             commandManager.ProcessCommand("/vnav rebuild");
     }
 
-    private void DrawReloadDataButton()
+    internal void DrawClearVBMMapsButton(bool showLabel = false)
     {
-        if (QstWidgets.RailButton(FontAwesomeIcon.RedoAlt, _L("Reload Data")))
+        bool isNavmeshAvailable = commandManager.Commands.ContainsKey("/vbm");
+        string tooltip = isNavmeshAvailable
+            ? _L("Clear BossMod obstacle maps to fix pathfinding issues. Hold CTRL to enable this button")
+            : _L("VBM is not available. Please install it first.");
+        if (QstWidgets.RailButton(FontAwesomeIcon.Directions, _L("Clear VBM obstacle maps"), tooltip,
+                enabled: isNavmeshAvailable && ImGui.IsKeyDown(ImGuiKey.ModCtrl),
+                showLabel: showLabel))
+            commandManager.ProcessCommand("/vbm clear-maps");
+    }
+
+    internal void DrawReloadDataButton(bool showLabel = false)
+    {
+        if (QstWidgets.RailButton(FontAwesomeIcon.RedoAlt, _L("Reload Data"),
+                _L("Reset sequence progess and reload quest data from disk"),
+                showLabel: showLabel))
             Reload?.Invoke(this, EventArgs.Empty);
     }
 
-    private void DrawJournalProgressButton()
+    internal void DrawJournalProgressButton(bool showLabel = false)
     {
-        if (QstWidgets.RailButton(FontAwesomeIcon.BookBookmark, _L("Journal Progress")))
+        if (QstWidgets.RailButton(FontAwesomeIcon.BookBookmark, _L("Journal Progress"),
+                _L("Utility to browse quest data used by this plugin"),
+                showLabel: showLabel))
             journalProgressWindow.ToggleOrUncollapse();
     }
 
-    private void DrawTroubleshootingButton(QuestController.QuestProgress? questProgress, bool isRunning)
+    internal void DrawTroubleshootingButton(bool showLabel = false, bool highlighted = false)
     {
+        QuestController.QuestProgress? questProgress = questController.CurrentQuest;
+        bool isRunning = highlighted || questController.IsRunning;
         bool leftClicked = QstWidgets.RailButton(FontAwesomeIcon.Handshake,
+            _L("Stuck?"),
             _L("Left click: Copy troubleshooting information to clipboard\nRight click: Copy list of completed quests to clipboard"),
             tint: isRunning ? QstTheme.Accent : null,
-            enabled: objectTable[0] != null);
+            enabled: objectTable[0] != null,
+            showLabel: showLabel);
         bool rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
         if (leftClicked || rightClicked)
         {
@@ -152,15 +169,17 @@ internal sealed class QuickAccessButtonsComponent
         }
     }
 
-    private void DrawValidationIssuesButton()
+    internal void DrawValidationIssuesButton(bool showLabel = false)
     {
         int errorCount = questRegistry.ValidationErrorCount;
         int infoCount = questRegistry.ValidationIssueCount - questRegistry.ValidationErrorCount;
         bool hasErrors = errorCount > 0;
 
         if (QstWidgets.RailButton(hasErrors ? FontAwesomeIcon.ExclamationTriangle : FontAwesomeIcon.InfoCircle,
+                _L("Quest Validation"),
                 _LF("Quest validation: {0} errors, {1} infos", errorCount, infoCount),
-                tint: hasErrors ? QstTheme.Danger : QstTheme.Info))
+                tint: hasErrors ? QstTheme.Danger : QstTheme.Info,
+                showLabel: showLabel))
             questValidationWindow.ToggleOrUncollapse();
     }
 }

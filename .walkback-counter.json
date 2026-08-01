@@ -6,7 +6,8 @@
     "Questionable/External/StylistIpc.cs": 1,
     "Questionable/Functions/CameraFunctions.cs": 1,
     "Questionable/Windows/Common/LWindow.cs": 1,
-    "Questionable/Windows/ConfigComponents/PluginConfigComponent.cs": 1
+    "Questionable/Windows/ConfigComponents/PluginConfigComponent.cs": 1,
+    "Questionable/Windows/PathEditorComponents/StepCaptureComponent.cs": 1
   },
   "schema_version": 1
 }

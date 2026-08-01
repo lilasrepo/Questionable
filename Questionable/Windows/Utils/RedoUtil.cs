@@ -71,9 +71,20 @@ internal unsafe sealed class RedoUtil
     /// <param name="questRedoChapter"></param>
     internal void SendRedoCommand(int? chapterIndex = null, RedoChapter? redoChapter = null, QuestRedoChapterUI? questRedoChapter = null)
     {
-        // B1: API12 FFXIVClientStructs lacks GameMain.ExecuteCommand (game-7.5).
-        // TODO(api12): port to a sig-scanned delegate. Redo trigger is a no-op on TC; status display still works.
-        _ = chapterIndex;
+        // B1 LIFTED 2026-08-01: api13's FFXIVClientStructs (CS 6966) ships
+        // GameMain.ExecuteCommand(command, param1..4 = 0) — Cecil-verified against
+        // TC_ok/_dalamud_api13/FFXIVClientStructs.dll. Restored to upstream's body;
+        // the four RedoComponent call sites are live again.
+        if (chapterIndex == null)
+        {
+            if (redoChapter != null)
+                chapterIndex = (int)redoChapter;
+            else if (questRedoChapter != null)
+                chapterIndex = (int)questRedoChapter.Value.RowId;
+        }
+        if (IsRedoActive())
+            chapterIndex = 0;
+        GameMain.ExecuteCommand((int)GameCommand.QuestRedo, chapterIndex ?? 0);
     }
 
     internal bool IsRedoActive() => QuestRedoHud != null && QuestRedoHud->IsAgentActive() && TryGetActiveRedoChapter(out var _);

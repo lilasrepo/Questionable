@@ -250,7 +250,7 @@ internal sealed unsafe class QuestFunctions
         return QuestReference.NoQuest(msqQuest.State);
     }
 
-    public (QuestReference, string?) GetMainScenarioQuest()
+    public (QuestReference, string?) GetMainScenarioQuestId()
     {
         if (QuestManager.IsQuestComplete(3759)) // Memories Rekindled
         {
@@ -282,8 +282,17 @@ internal sealed unsafe class QuestFunctions
         if (scenarioTree->Data == null)
             return (QuestReference.NoQuest(MainScenarioQuestState.LoadingScreen), _L("Scenario Tree Data is null"));
 
-        // B1: API12 AgentScenarioTreeData has CurrentScenarioQuest (uint) instead of MainScenarioQuestIds[] (game-7.5 array of multiple).
-        QuestId currentQuest = new((ushort)scenarioTree->Data->CurrentScenarioQuest);
+        // B1: api13 / TC game 7.20 AgentScenarioTreeData has CurrentScenarioQuest (uint) instead of
+        // MainScenarioQuestIds[] (game-7.5 array of multiple). Migrated 2026-08-01 into upstream's
+        // GetMainScenarioQuestId()/GetMainScenarioQuest() split.
+        return (new(new QuestId((ushort)scenarioTree->Data->CurrentScenarioQuest), 0, MainScenarioQuestState.Available), "MSQ");
+    }
+
+    public (QuestReference, string?) GetMainScenarioQuest()
+    {
+        (QuestReference currentQuestRef, var _) = GetMainScenarioQuestId();
+        if (currentQuestRef.CurrentQuest is not QuestId currentQuest)
+            return (QuestReference.NoQuest(MainScenarioQuestState.Unavailable), "MSQ");
         string extraData = $"sq: {currentQuest}";
         if (currentQuest.Value == 0)
         {
@@ -339,9 +348,6 @@ internal sealed unsafe class QuestFunctions
         // but this is just really hoping that this breaks nothing.
         if (IsQuestComplete(currentQuest))
             return (new(currentQuest, 255, MainScenarioQuestState.Available), _LF("Quest {0} complete", currentQuest.Value));
-
-        if (!IsReadyToAcceptQuest(currentQuest))
-            return (QuestReference.NoQuest(MainScenarioQuestState.Unavailable), _LF("Not ready to accept quest {0}", currentQuest.Value));
 
         short currentLevel = PlayerState.Instance()->CurrentLevel;
 
@@ -444,28 +450,7 @@ internal sealed unsafe class QuestFunctions
                         _LF("Not enough gil, estimated cost: {0:N0}{1}", teleportCosts, SeIconChar.Gil.ToIconString()));
                 }
 
-                EAetheryteLocation? firstLockedAetheryte = quest.AllSteps()
-                    .Select(y =>
-                    {
-                        if (y.Step.AetheryteShortcut is { } aetheryteShortcut &&
-                            !aetheryteFunctions.IsAetheryteUnlocked(aetheryteShortcut))
-                        {
-                            if ((y.Step.SkipConditions?.AetheryteShortcutIf?.AetheryteLocked) != aetheryteShortcut)
-                                return aetheryteShortcut;
-                        }
-
-                        if (y.Step.AethernetShortcut is { } aethernetShortcut)
-                        {
-                            if (!aetheryteFunctions.IsAetheryteUnlocked(aethernetShortcut.From))
-                                return aethernetShortcut.From;
-
-                            if (!aetheryteFunctions.IsAetheryteUnlocked(aethernetShortcut.To))
-                                return aethernetShortcut.To;
-                        }
-
-                        return (EAetheryteLocation?)null;
-                    })
-                    .FirstOrDefault(y => y != null);
+                EAetheryteLocation? firstLockedAetheryte = GetFirstLockedAetheryte(quest);
                 if (firstLockedAetheryte != null)
                 {
                     // if quest requires white wolf gate, and unlock quest is available, don't report locked
@@ -477,6 +462,42 @@ internal sealed unsafe class QuestFunctions
                 return new PriorityQuestInfo(x);
             })
             .ToList();
+    }
+
+    internal EAetheryteLocation? GetFirstLockedAetheryte(Quest quest)
+    {
+        IEnumerable<EAetheryteLocation> unlocks = [];
+        return quest.AllSteps()
+                    .Select(y =>
+                    {
+                        if (y.Step.InteractionType is EInteractionType.AttuneAetheryte &&
+                                y.Step.Aetheryte is EAetheryteLocation a)
+                            unlocks = unlocks.Append(a);
+                        if (y.Step.InteractionType is EInteractionType.AttuneAethernetShard &&
+                                y.Step.AethernetShard is EAetheryteLocation b)
+                            unlocks = unlocks.Append(b);
+                        if (y.Step.AetheryteShortcut is { } aetheryteShortcut &&
+                            !aetheryteFunctions.IsAetheryteUnlocked(aetheryteShortcut) &&
+                            !unlocks.Contains(aetheryteShortcut))
+                        {
+                            if ((y.Step.SkipConditions?.AetheryteShortcutIf?.AetheryteLocked) != aetheryteShortcut)
+                                return aetheryteShortcut;
+                        }
+
+                        if (y.Step.AethernetShortcut is { } aethernetShortcut)
+                        {
+                            if (!aetheryteFunctions.IsAetheryteUnlocked(aethernetShortcut.From) &&
+                                    !unlocks.Contains(aethernetShortcut.From))
+                                return aethernetShortcut.From;
+
+                            if (!aetheryteFunctions.IsAetheryteUnlocked(aethernetShortcut.To) &&
+                                    !unlocks.Contains(aethernetShortcut.To))
+                                return aethernetShortcut.To;
+                        }
+
+                        return (EAetheryteLocation?)null;
+                    })
+                    .FirstOrDefault(y => y != null);
     }
 
     private int TeleportCosts(Quest quest)
@@ -664,7 +685,8 @@ internal sealed unsafe class QuestFunctions
             lockedReason.Add(_L("Rank"), questInfo.GrandCompanyRank > GetGrandCompanyRank());
         }
 
-        lockedReason.Add(_L("Level"), playerState->CurrentLevel < questInfo.Level);
+        if (playerState->CurrentLevel < questInfo.Level)
+            lockedReason.Add(_L("Level") + $": {(Job)playerState->CurrentClassJobId}={playerState->CurrentLevel} < {questInfo.Level}", playerState->CurrentLevel < questInfo.Level);
         if (questInfo.AlliedSociety != EAlliedSociety.None)
             if (questInfo.IsRepeatable)
                 lockedReason.Add(_L("Daily unavailable"), !IsDailyAlliedSocietyQuestAndAvailableToday(questId));
@@ -689,8 +711,16 @@ internal sealed unsafe class QuestFunctions
             lockedReason.Add(_L("Retainers"), retainerManager->MaxRetainerEntitlement == 0);
         }
 
-        lockedReason.Add(_L("Prev quest"), !HasCompletedPreviousQuests(questInfo, extraCompletedQuest));
-        lockedReason.Add(_L("Prev instance"), !HasCompletedPreviousInstances(questInfo));
+        if (!HasCompletedPreviousQuests(questInfo, extraCompletedQuest))
+            lockedReason.Add(_L("Prev quest"), value: true);
+        if (!HasCompletedPreviousInstances(questInfo))
+            lockedReason.Add(_L("Prev instance"), value: true);
+        if (questRegistry.TryGetQuest(questId, out Quest? quest))
+        {
+            EAetheryteLocation? firstLockedAetheryte = GetFirstLockedAetheryte(quest);
+            if (firstLockedAetheryte != null)
+                lockedReason.Add(_LF("Aetheryte locked: {0}", firstLockedAetheryte ?? EAetheryteLocation.None), value: true);
+        }
         return (lockedReason.Values.Any(x => x), lockedReason.Keys.ToArray());
     }
 
