@@ -3,9 +3,9 @@
          (MSBuild imports only the nearest one), so without these lines the plugin ships with
          absolute local paths baked in: every [CallerFilePath] default argument becomes a string
          literal in the DLL, and the SDK's SourceLink/SCM queries embed the outer repo URL + SHA.
-         Measured 2026-08-01 on the published v15.306.1.19-TC13 build: 31 distinct
-         "D:\Claude\Dalamud\TC_forward\..." strings in Questionable.dll plus a SourceLink blob and
-         the operator's name in the PDB. Keep in sync with TC_forward/Directory.Build.props. -->
+         Measured 2026-08-01 on the published v15.306.1.19-TC13 build: 31 distinct build-machine
+         path strings in Questionable.dll, plus a SourceLink blob and a username in the PDB.
+         Keep in sync with TC_forward/Directory.Build.props. -->
     <PropertyGroup>
         <Deterministic>true</Deterministic>
         <PathMap>$(MSBuildThisFileDirectory)=/</PathMap>
