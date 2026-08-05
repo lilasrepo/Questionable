@@ -106,7 +106,7 @@ internal sealed class ClassJobUtils
         };
     }
 
-    private Job LookupConfiguredJob(EExtendedClassJob jobType)
+    internal Job LookupConfiguredJob(EExtendedClassJob jobType)
     {
         Job configuredJob;
         if (jobType is EExtendedClassJob.ConfiguredCombatJob)
@@ -181,11 +181,11 @@ internal sealed class ClassJobUtils
         return jobs.AsReadOnly();
     }
 
-    private unsafe Job LookupQuestStartJob(ElementId? elementId)
+    internal unsafe Job LookupQuestStartJob(ElementId? elementId)
     {
         ArgumentNullException.ThrowIfNull(elementId);
 
-        if (elementId is QuestId questId)
+        if (elementId is QuestId questId && QuestFunctions.IsQuestAccepted(questId))
         {
             QuestWork* questWork = QuestManager.Instance()->GetQuestById(questId.Value);
             if (questWork->AcceptClassJob != 0)

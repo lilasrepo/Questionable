@@ -7,6 +7,10 @@ using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Questionable.Model.Questing;
 using Questionable.Windows.Common;
 using Questionable.Windows.Common.Ui;
+using Addon = Lumina.Excel.Sheets.Addon;
+using ExVersion = Lumina.Excel.Sheets.ExVersion;
+using JournalCategory = Lumina.Excel.Sheets.JournalCategory;
+using JournalGenre = Lumina.Excel.Sheets.JournalGenre;
 namespace Questionable.Windows;
 
 internal sealed class PriorityWindow : LWindow
@@ -108,7 +112,7 @@ internal sealed class PriorityWindow : LWindow
             if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Upload, _L("Export to Clipboard")))
                 ExportToClipboard();
             if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Check, _L("Remove finished Quests")))
-                _questController.PriorityManager.RemoveCompleted(_questFunctions.IsQuestComplete);
+                _questController.PriorityManager.RemoveCompleted(_questFunctions.IsQuestComplete, _questFunctions.IsQuestAccepted);
             ImGui.SameLine();
 
             using (ImRaii.Disabled(!ImGui.IsKeyDown(ImGuiKey.ModCtrl)))
@@ -157,6 +161,20 @@ internal sealed class PriorityWindow : LWindow
                     _questTooltipComponent.Draw(quest.Info);
 
                 _questJournalUtils.ShowContextMenu(quest.Info, quest, nameof(PriorityWindow));
+
+                if (_questController.PriorityManager.IsAcceptOnly(quest.Id))
+                {
+                    bool accepted = _questFunctions.IsQuestAccepted(quest.Id);
+                    ImGui.SameLine();
+                    ImGui.AlignTextToFramePadding();
+                    using (_pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
+                        ImGui.TextColored(accepted ? QstTheme.Success : QstTheme.Accent,
+                            FontAwesomeIcon.Inbox.ToIconString());
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip(accepted
+                            ? _L("Accepted — completion follows the normal quest order.")
+                            : _L("Accept only — picked up before any queued quest is completed."));
+                }
 
                 if (priorityQuests.Count > 1)
                 {
@@ -306,16 +324,6 @@ internal sealed class PriorityWindow : LWindow
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         if (ImGui.BeginCombo("##PresetSelection", preview, ImGuiComboFlags.HeightLarge))
         {
-            ImGui.TextDisabled(_L("Built-in"));
-            foreach (string name in builtInPresets.Keys)
-            {
-                if (ImGui.Selectable(name, _selectedPresetName == name))
-                {
-                    _selectedPresetName = name;
-                    LoadPreset(name);
-                }
-            }
-
             if (userPresets.Count > 0)
             {
                 ImGui.Separator();
@@ -327,6 +335,16 @@ internal sealed class PriorityWindow : LWindow
                         _selectedPresetName = name;
                         LoadPreset(name);
                     }
+                }
+            }
+
+            ImGui.TextDisabled(_L("Built-in"));
+            foreach (string name in builtInPresets.Keys)
+            {
+                if (ImGui.Selectable(name, _selectedPresetName == name))
+                {
+                    _selectedPresetName = name;
+                    LoadPreset(name);
                 }
             }
 
@@ -467,24 +485,27 @@ internal sealed class PriorityWindow : LWindow
             2110,2053, // Dark Knight
             2123,2012 // Astrologian
         ]).FromNumericListOfQuests();
+        var aetherCurrents = _T<Addon>(2445);
+        var roleQuests = _T<JournalCategory>(95);
         _builtInPresets = new(StringComparer.Ordinal)
         {
             [JobQuestsPresetName] = [],
             [_L("Unlock all jobs")] = jobUnlocks,
             [_L("Gil (set TextAdvance to prefer Gil sacks)")] = gilList,
             [_L("Post-ARR unlocks")] = postARRUnlocks,
-            [_L("ARR Hard Mode Primals")] = QuestData.HardModePrimals.Cast<ElementId>().ToList(),
-            [_L("Crystal Tower Raids")] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(),
-            [_L("Aether Currents: Heavensward")] = GetAetherCurrentQuests(397, 398, 399, 400, 401),
-            [_L("Aether Currents: Stormblood")] = GetAetherCurrentQuests(612, 613, 614, 620, 621, 622),
-            [_L("Aether Currents: Shadowbringers")] = GetAetherCurrentQuests(813, 814, 815, 816, 817, 818),
-            [_L("Aether Currents: Endwalker")] = GetAetherCurrentQuests(956, 957, 958, 959, 960, 961),
-            [_L("Aether Currents: Dawntrail")] = GetAetherCurrentQuests(1187, 1188, 1189, 1190, 1191, 1192),
-            [_L("Role Quests: Tank")] = _questData.GetRoleQuests(Job.PLD).Select(x => x.QuestId).ToList(),
-            [_L("Role Quests: Healer")] = _questData.GetRoleQuests(Job.WHM).Select(x => x.QuestId).ToList(),
-            [_L("Role Quests: Melee DPS")] = _questData.GetRoleQuests(Job.MNK).Select(x => x.QuestId).ToList(),
-            [_L("Role Quests: Physical Ranged")] = _questData.GetRoleQuests(Job.BRD).Select(x => x.QuestId).ToList(),
-            [_L("Role Quests: Caster")] = _questData.GetRoleQuests(Job.BLM).Select(x => x.QuestId).ToList(),
+            [_T<JournalGenre>(94)] = QuestData.DeliveryMoogleQuests.ToList(),
+            [_T<JournalCategory>(16)] = QuestData.HardModePrimals.Cast<ElementId>().ToList(),
+            [_T<JournalCategory>(18)] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(),
+            [$"{aetherCurrents}: {_T<ExVersion>(1)}"] = GetAetherCurrentQuests(397, 398, 399, 400, 401),
+            [$"{aetherCurrents}: {_T<ExVersion>(2)}"] = GetAetherCurrentQuests(612, 613, 614, 620, 621, 622),
+            [$"{aetherCurrents}: {_T<ExVersion>(3)}"] = GetAetherCurrentQuests(813, 814, 815, 816, 817, 818),
+            [$"{aetherCurrents}: {_T<ExVersion>(4)}"] = GetAetherCurrentQuests(956, 957, 958, 959, 960, 961),
+            [$"{aetherCurrents}: {_T<ExVersion>(5)}"] = GetAetherCurrentQuests(1187, 1188, 1189, 1190, 1191, 1192),
+            [$"{roleQuests}: {_T<Addon>(1082)}"] = _questData.GetRoleQuests(Job.PLD).Select(x => x.QuestId).ToList(),
+            [$"{roleQuests}: {_T<Addon>(1083)}"] = _questData.GetRoleQuests(Job.WHM).Select(x => x.QuestId).ToList(),
+            [$"{roleQuests}: {_T<Addon>(1084)}"] = _questData.GetRoleQuests(Job.MNK).Select(x => x.QuestId).ToList(),
+            [$"{roleQuests}: {_T<Addon>(1085)}"] = _questData.GetRoleQuests(Job.BRD).Select(x => x.QuestId).ToList(),
+            [$"{roleQuests}: {_T<Addon>(1086)}"] = _questData.GetRoleQuests(Job.BLM).Select(x => x.QuestId).ToList(),
         };
 
         return _builtInPresets;

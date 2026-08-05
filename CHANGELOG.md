@@ -1,1 +1,1 @@
-- Feature: "no supported quests" view now shows in the tooltip if the next MSQ is accepted but hidden -alydev
+- Bug fix maybe: increased default delay from .25 seconds back up to .75 seconds -alydev

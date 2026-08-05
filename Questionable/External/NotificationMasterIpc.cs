@@ -13,4 +13,11 @@ internal sealed class NotificationMasterIpc
     public void Notify(string message)
     {
     }
+
+    // Upstream added NotifyOnFailure and calls it from QuestController/MiniTaskController.
+    // Same B1 stub as Notify -- present so those call sites compile, no-op so nothing is
+    // routed to the unavailable NotificationMasterAPI.
+    public void NotifyOnFailure(string message)
+    {
+    }
 }

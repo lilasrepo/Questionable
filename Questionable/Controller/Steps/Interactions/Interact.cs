@@ -15,10 +15,7 @@ namespace Questionable.Controller.Steps.Interactions;
 // TODO: refactor — heavy nesting (22 lines indented ≥6 levels, max indent ~12 levels).
 internal static class Interact
 {
-    internal sealed class Factory(
-        AutomatonIpc automatonIpc,
-        Configuration configuration,
-        RedoUtil redoUtil) : ITaskFactory
+    internal sealed class Factory(AutomatonIpc automatonIpc, Configuration configuration, RedoUtil redoUtil) : ITaskFactory
     {
         public IEnumerable<ITask> CreateAllTasks(Quest quest, QuestSequence sequence, QuestStep step)
         {
@@ -56,11 +53,6 @@ internal static class Interact
             }
             else if (step.InteractionType == EInteractionType.PurchaseItem)
             {
-                //if (step.ItemId != null)
-                //    yield return new WaitCondition.Task(() => {
-                //        itemVendorLocationIpc.HighlightItemVendors(step.ItemId.Value);
-                //        return true;
-                //    }, $"OpenVendorResults({step.ItemId})");
                 if (step.DataId == null)
                     yield break;
             }
@@ -267,34 +259,37 @@ internal static class Interact
                 {
                     if (!acceptableJobs[0].IsCrafter() && !acceptableJobs[0].IsGatherer())
                     {
-                        if (acceptableJobs.Contains(configuration.General.CombatJob))
-                            acceptableJobs = [.. acceptableJobs.Prepend(configuration.General.CombatJob)];
+                        targetJob = classJobUtils.LookupConfiguredJob(EExtendedClassJob.ConfiguredCombatJob);
+                        if (acceptableJobs.Contains(targetJob))
+                            acceptableJobs = [.. acceptableJobs.Prepend(targetJob)];
                         else
                             logger.LogInformation("Normal quest, but configured job {CombatJob} is not valid for {QuestId}, changing to {AcceptableJob}",
-                                configuration.General.CombatJob, Task.Quest.Id, acceptableJobs[0]);
+                                targetJob, Task.Quest.Id, acceptableJobs[0]);
                     }
                     if (acceptableJobs[0].IsCrafter())
                     {
-                        if (acceptableJobs.Contains(configuration.General.CraftingJob))
-                            acceptableJobs = [.. acceptableJobs.Prepend(configuration.General.CraftingJob)];
+                        targetJob = classJobUtils.LookupConfiguredJob(EExtendedClassJob.ConfiguredCraftingJob);
+                        if (acceptableJobs.Contains(targetJob))
+                            acceptableJobs = [.. acceptableJobs.Prepend(targetJob)];
                         else
                             logger.LogInformation("Crafting quest, but configured job {CraftingJob} is not valid for {QuestId}, changing to {AcceptableJob}",
-                                configuration.General.CraftingJob, Task.Quest.Id, acceptableJobs[0]);
+                                targetJob, Task.Quest.Id, acceptableJobs[0]);
                     }
                     else if (acceptableJobs[0].IsGatherer())
                     {
-                        if (acceptableJobs.Contains(configuration.General.GatheringJob))
-                            acceptableJobs = [.. acceptableJobs.Prepend(configuration.General.GatheringJob)];
+                        targetJob = classJobUtils.LookupConfiguredJob(EExtendedClassJob.ConfiguredGatheringJob);
+                        if (acceptableJobs.Contains(targetJob))
+                            acceptableJobs = [.. acceptableJobs.Prepend(targetJob)];
                         else
                             logger.LogInformation("Gathering quest, but configured job {GatheringJob} is not valid for {QuestId}, changing to {AcceptableJob}",
-                                configuration.General.GatheringJob, Task.Quest.Id, acceptableJobs[0]);
+                                targetJob, Task.Quest.Id, acceptableJobs[0]);
                     }
                     if (Task.Quest.Info.AlliedSociety.Equals(EAlliedSociety.Namazu))
                     {
                         if (configuration.Advanced.NamazuPreferCraft && !acceptableJobs[0].IsCrafter())
-                            acceptableJobs = [.. acceptableJobs.Prepend(configuration.General.CraftingJob)];
+                            acceptableJobs = [.. acceptableJobs.Prepend(targetJob)];
                         else if (!configuration.Advanced.NamazuPreferCraft && !acceptableJobs[0].IsGatherer())
-                            acceptableJobs = [.. acceptableJobs.Prepend(configuration.General.GatheringJob)];
+                            acceptableJobs = [.. acceptableJobs.Prepend(targetJob)];
                     }
                     targetJob = acceptableJobs[0];
                     if (classJobUtils.ClassToJobStone(targetJob) is (Job job, ushort item))
@@ -310,6 +305,31 @@ internal static class Interact
                         throw new Exception($"Quest {Task.Quest.Info.Name} requires a job like {targetJob}, " +
                                            "but you do not have a gearset for this job or have not configured QST job preferences.");
                     }
+                    logger.LogInformation($"Switched from {playerJob} to {targetJob}");
+
+                    _continueAt = DateTime.Now.AddSeconds(0.2);
+                    return ETaskResult.StillRunning;
+                }
+            }
+
+            // A class/job quest can only be progressed on the class it was accepted with — otherwise the game
+            // blocks with "You cannot continue this quest until the following conditions are met: Required
+            // Class/Job: X". Accepting a batch of quests (e.g. the accept-only flow) can leave a different
+            // class active, so before interacting to progress/complete an accepted quest, switch back to its
+            // accept class if needed. LookupQuestStartJob returns Job.ADV for quests with no such lock.
+            // So, even if a user manually interferes this allows us to resume questing with the correct class type :)
+            if (Task.Quest != null &&
+                InteractionType is EInteractionType.CompleteQuest or EInteractionType.Interact &&
+                objectTable[0] is IPlayerCharacter completionPlayer)
+            {
+                Job requiredJob = classJobUtils.LookupQuestStartJob(Task.Quest.Id);
+                if (requiredJob != Job.ADV && (Job)completionPlayer.ClassJob.Value.RowId != requiredJob)
+                {
+                    logger.LogInformation("Quest {QuestId} must be continued as {RequiredJob}, switching from {CurrentJob}",
+                        Task.Quest.Id, requiredJob, (Job)completionPlayer.ClassJob.Value.RowId);
+                    if (!classJobUtils.SwitchClassJob(requiredJob))
+                        throw new Exception($"Quest {Task.Quest.Info.Name} must be continued as {requiredJob}, " +
+                                            "but you do not have a gearset for that job.");
 
                     _continueAt = DateTime.Now.AddSeconds(0.2);
                     return ETaskResult.StillRunning;

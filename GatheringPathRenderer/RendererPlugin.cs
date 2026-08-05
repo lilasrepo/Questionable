@@ -272,7 +272,7 @@ public sealed class RendererPlugin : IDalamudPlugin
 
     private void Draw()
     {
-        if (_currentClassJob is not (Job.MIN or Job.BTN))
+        if (_currentClassJob is not (Job.MIN or Job.BTN) || !_editorWindow.IsOpen)
             return;
 
         using PctDrawList? drawList = PictoService.Draw();
