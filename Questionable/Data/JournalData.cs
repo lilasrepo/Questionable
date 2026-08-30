@@ -1,7 +1,8 @@
-﻿using Lumina.Excel.Sheets;
+using Lumina.Excel.Sheets;
 using Questionable.Model.Questing;
 namespace Questionable.Data;
 
+[RegisterSingleton]
 internal sealed class JournalData
 {
     public JournalData(IDataManager dataManager, QuestData questData, QuestRegistry questRegistry)
@@ -14,17 +15,17 @@ internal sealed class JournalData
         QuestRedo limsaStart = dataManager.GetExcelSheet<QuestRedo>().GetRow(1);
         QuestRedo gridaniaStart = dataManager.GetExcelSheet<QuestRedo>().GetRow(2);
         QuestRedo uldahStart = dataManager.GetExcelSheet<QuestRedo>().GetRow(3);
-        Genre genreLimsa = new(StartingInLimsa, _L("Starting in Limsa Lominsa"), 1,
+        Genre genreLimsa = new(GenreStartingInLimsa, _L("Starting in Limsa Lominsa"), 1,
             new uint[] { 108, 109 }.Concat(limsaStart.QuestRedoParam.Select(x => x.Quest.RowId))
                 .Where(x => x != 0)
                 .Select(x => questData.GetQuestInfo(QuestId.FromRowId(x)))
                 .ToList());
-        Genre genreGridania = new(StartingInGridania, _L("Starting in Gridania"), 1,
+        Genre genreGridania = new(GenreStartingInGridania, _L("Starting in Gridania"), 1,
             new uint[] { 85, 123, 124 }.Concat(gridaniaStart.QuestRedoParam.Select(x => x.Quest.RowId))
                 .Where(x => x != 0)
                 .Select(x => questData.GetQuestInfo(QuestId.FromRowId(x)))
                 .ToList());
-        Genre genreUldah = new(StartingInUldah, _L("Starting in Ul'dah"), 1,
+        Genre genreUldah = new(GenreStartingInUldah, _L("Starting in Ul'dah"), 1,
             new uint[] { 568, 569, 570 }.Concat(uldahStart.QuestRedoParam.Select(x => x.Quest.RowId))
                 .Where(x => x != 0)
                 .Select(x => questData.GetQuestInfo(QuestId.FromRowId(x)))
@@ -35,7 +36,7 @@ internal sealed class JournalData
             .RemoveAll(x =>
                 genreLimsa.Quests.Contains(x) || genreGridania.Quests.Contains(x) || genreUldah.Quests.Contains(x));
 
-        Genre instantGenre = new(InstantQuests, _L("Instant Quests"), SpecialQuests,
+        Genre instantGenre = new(GenreInstantQuests, _L("Instant Quests"), CategorySpecialQuests,
             questRegistry.AllQuests
                      .Where(x => x.Info is QuestInfo qInfo && qInfo.CompletesInstantly)
                      .Select(x => x.Info)
@@ -43,6 +44,57 @@ internal sealed class JournalData
                      .ToList()
         );
         genres = genres.Append(instantGenre).ToList();
+
+        // porting-note(api13): upstream uses Single() on both of these journal genres and
+        // Dictionary-indexes every quest id. Both assume game 7.5's sheets. On TC's 7.20 data a
+        // missing JournalGenre row (or one whose Icon is 0, which the filter above drops) makes
+        // Single() throw "Sequence contains no elements" inside the JournalData constructor --
+        // which runs during DI, so the WHOLE PLUGIN fails to construct over a cosmetic journal
+        // grouping. Genre 251 (Special Quests) is exactly that case; 252 (Collaboration) does
+        // resolve. Degrade to "skip the grouping" instead.
+        Genre? collabQuests = genres.SingleOrDefault(g => g.Id.Equals(GenreCollaborationQuests));
+        collabQuests?.Quests.Add(((ushort[])[
+            1153, 1154, 1155, 1556, // ffxiii 2013
+            1287, // ffxi 2014
+            1288, // dqx
+            2141, // yokai
+            2206, // ffxi 2015
+            3158, 3159, 3160, // ffxv
+            4796, 4797, 4798, // ffxvi
+            4801, // fall guys
+        ]).FromNumericListOfQuests()
+            .Where(q => questData.TryGetQuestInfo(q, out _))
+            .Select(q => questData.GetQuestInfo(q)).ToArray());
+
+        // Reassign special sidequests to another genre
+        Dictionary<QuestId, uint> questReassignPairs = new() {
+            { new(432), GenreSpecialQuests }, // arr ex mount
+            { new(1550), GenreSpecialQuests }, // hw ex mount
+            { new(3200), GenreSpecialQuests }, // stb ex mount
+            { new(4057), GenreSpecialQuests }, // shb ex mount
+            { new(4795), GenreSpecialQuests }, // ew ex mount
+            { new(5469), GenreSpecialQuests }, // dt ex mount
+        };
+        //foreach (var genre in genres)
+        //{
+        //    foreach (var q in genre.Quests)
+        //    {
+        //        if (q.Level == 1)
+        //            questReassignPairs[(QuestId)q.QuestId] = GenreSpecialQuests;
+        //    }
+        //}
+        foreach (var kvp in questReassignPairs)
+        {
+            // Same two assumptions as above, and in this order deliberately: resolve the target
+            // genre and the quest FIRST, so a quest is never removed from its real genre when
+            // there is nowhere to put it back.
+            Genre? genreAdd = genres.SingleOrDefault(g => g.Id.Equals(kvp.Value));
+            if (genreAdd == null || !questData.TryGetQuestInfo(kvp.Key, out IQuestInfo? info))
+                continue;
+            foreach (var _g in genres)
+                _g.Quests.Remove(info);
+            genreAdd.Quests.Add(info);
+        }
 
         Genres = genres.ToList();
         Categories = dataManager.GetExcelSheet<JournalCategory>()
@@ -53,11 +105,13 @@ internal sealed class JournalData
             .Select(x => new Section(x, Categories.Where(y => y.SectionId == x.RowId).ToList()))
             .ToList();
     }
-    public const uint StartingInUldah = uint.MaxValue - 1;
-    public const uint StartingInGridania = uint.MaxValue - 2;
-    public const uint StartingInLimsa = uint.MaxValue - 3;
-    public const uint InstantQuests = uint.MaxValue - 4;
-    public const uint SpecialQuests = 98;
+    public const uint CategorySpecialQuests = 98;
+    public const uint GenreSpecialQuests = 251;
+    public const uint GenreCollaborationQuests = 252;
+    public const uint GenreStartingInUldah = uint.MaxValue - 1;
+    public const uint GenreStartingInGridania = uint.MaxValue - 2;
+    public const uint GenreStartingInLimsa = uint.MaxValue - 3;
+    public const uint GenreInstantQuests = uint.MaxValue - 4;
 
     public List<Genre> Genres { get; }
     public List<Category> Categories { get; }

@@ -15,6 +15,7 @@ using Sheets = Lumina.Excel.Sheets;
 namespace Questionable.Controller;
 
 // TODO: refactor — heavy nesting (29 lines indented ≥6 levels, max indent ~8 levels).
+[RegisterSingleton]
 internal sealed class QuestRegistry
 {
     private readonly IChatGui _chatGui;
@@ -352,6 +353,15 @@ internal sealed class QuestRegistry
         return allQuests
             .Where(x => IsKnownQuest(x.QuestId))
             .ToList();
+    }
+
+    public bool TryGetQuestByContentFinderConditionId(uint cfcId, out IQuestInfo? questInfo)
+    {
+        if (_contentFinderConditionIds.TryGetValue(cfcId, out (ElementId qId, QuestStep step) value) &&
+                _questData.TryGetQuestInfo(value.qId, out questInfo))
+            return questInfo != null;
+        questInfo = null;
+        return false;
     }
 
     public bool TryGetDutyByContentFinderConditionId(uint cfcId, [NotNullWhen(true)] out DutyOptions? dutyOptions)

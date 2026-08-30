@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using Dalamud.Game.Text;
 using ECommons.ExcelServices;
 using Lumina.Excel.Sheets;
@@ -89,6 +89,9 @@ internal sealed class QuestInfo : IQuestInfo
         SocietyRepValue = quest.ReputationReward;
         ClassJobs = QuestInfoUtils.AsList(quest.ClassJobCategory0.ValueNullable!);
         IsSeasonalEvent = quest.Festival.RowId != 0;
+        // TC-only: upstream keeps only the bool, but TC needs the id -- see
+        // EventInfoComponent, which has to ask whether THIS festival is running here.
+        FestivalId = (ushort)quest.Festival.RowId;
         NewGamePlusChapter = newGamePlusChapter;
         StartingCity = startingCity;
         MoogleDeliveryLevel = (byte)quest.DeliveryQuest.RowId;
@@ -112,7 +115,21 @@ internal sealed class QuestInfo : IQuestInfo
                 return item != null ? ItemReward.CreateFromItem(item.Value, QuestId) : null;
             }).OfType<ItemReward>().ToList();
         Expansion = (EExpansionVersion)quest.Expansion.RowId;
+        // Gap-fill: this file is pinned, so members upstream adds have to be ported in by
+        // hand. Journal icon ids + the ContentFinderCondition behind InstanceContentUnlock.
+        CfcUnlock = quest.InstanceContentUnlock.RowId != 0
+            ? quest.InstanceContentUnlock.ValueNullable?.ContentFinderCondition.ValueNullable
+            : null;
+        AvailableIcon = quest.EventIconType.ValueNullable?.NpcIconAvailable + 1;
+        ActiveIcon = AvailableIcon + 2;
+        CompleteIcon = AvailableIcon + 4;
+        InvalidIcon = quest.EventIconType.ValueNullable?.NpcIconInvalid + 1;
     }
+    public uint? AvailableIcon { get; private set; }
+    public uint? ActiveIcon { get; private set; }
+    public uint? CompleteIcon { get; private set; }
+    public uint? InvalidIcon { get; private set; }
+    public ContentFinderCondition? CfcUnlock { get; }
     public ImmutableList<QQuestId> QuestLocks { get; private set; }
     public EQuestJoin QuestLockJoin { get; private set; }
     public List<string> ActionUnlock { get; }
@@ -128,6 +145,7 @@ internal sealed class QuestInfo : IQuestInfo
     public EAlliedSocietyRank AlliedSocietyRank { get; }
     public ushort SocietyRepValue { get; }
     public bool IsSeasonalEvent { get; }
+    public ushort FestivalId { get; }
     public uint NewGamePlusChapter { get; }
     public byte StartingCity { get; set; }
     public byte MoogleDeliveryLevel { get; }

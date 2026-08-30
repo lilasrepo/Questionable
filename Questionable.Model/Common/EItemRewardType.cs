@@ -9,4 +9,7 @@ public enum EItemRewardType
     FashionAccessory,
     Coffer,
     UnlockLink,
+    Duty,
+    RecipeBook,
+    FolkloreBook,
 }

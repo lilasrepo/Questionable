@@ -4,6 +4,7 @@ using Dalamud.Game.NativeWrapper;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 namespace Questionable.Utils;
 
+[RegisterSingleton<IGameGuiAdapter, GameGuiAdapter>]
 internal sealed unsafe class GameGuiAdapter(IGameGui gameGui) : IGameGuiAdapter
 {
     public bool TryGetAddonByName(string name, out AtkUnitBase* addon)

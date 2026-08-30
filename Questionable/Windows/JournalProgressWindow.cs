@@ -6,6 +6,7 @@ using Questionable.Controller;
 using Questionable.Windows.Common;
 namespace Questionable.Windows;
 
+[RegisterSingleton]
 internal sealed class JournalProgressWindow : LWindow, IDisposable
 {
     private readonly AlliedSocietyJournalComponent _alliedSocietyJournalComponent;

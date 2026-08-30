@@ -4,15 +4,20 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Humanizer;
 using Questionable.Model.Questing;
 using Questionable.Windows.Common;
 using Questionable.Windows.Common.Ui;
+using AchievementCategory = Lumina.Excel.Sheets.AchievementCategory;
 using Addon = Lumina.Excel.Sheets.Addon;
+using BeastTribe = Lumina.Excel.Sheets.BeastTribe;
 using ExVersion = Lumina.Excel.Sheets.ExVersion;
 using JournalCategory = Lumina.Excel.Sheets.JournalCategory;
 using JournalGenre = Lumina.Excel.Sheets.JournalGenre;
+using ContentRoulette = Lumina.Excel.Sheets.ContentRoulette;
 namespace Questionable.Windows;
 
+[RegisterSingleton]
 internal sealed class PriorityWindow : LWindow
 {
     private const string ClipboardPrefix = "qst:priority:";
@@ -82,11 +87,11 @@ internal sealed class PriorityWindow : LWindow
         {
             ImGui.TextWrapped(
                 _L("Questionable will generally try to do:"));
-            ImGui.BulletText(_L("Priority quests added below, in order"));
-            ImGui.BulletText(_L("'Priority' quests: class quests, ARR primals, ARR raids"));
-            ImGui.BulletText(
+            QstWidgets.BulletTextWrapped(_L("Priority quests added below, in order"));
+            QstWidgets.BulletTextWrapped(_L("'Priority' quests: class quests, ARR primals, ARR raids"));
+            QstWidgets.BulletTextWrapped(
                 _L("Supported quests in your 'To-Do list' (quests from your Quest Journal that are always on-screen)"));
-            ImGui.BulletText(_L("MSQ quest (if available, unless it is marked as 'ignored' in your Journal)"));
+            QstWidgets.BulletTextWrapped(_L("MSQ quest (if available, unless it is marked as 'ignored' in your Journal)"));
             ImGui.TextWrapped(
                 _L("If you don't have any active MSQ quest and there is no Priority Quest added here, " +
                 "it will always try to pick up the next quest in the MSQ first."));
@@ -112,7 +117,7 @@ internal sealed class PriorityWindow : LWindow
             if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Upload, _L("Export to Clipboard")))
                 ExportToClipboard();
             if (ImGuiComponentsLocal.IconButtonWithText(FontAwesomeIcon.Check, _L("Remove finished Quests")))
-                _questController.PriorityManager.RemoveCompleted(_questFunctions.IsQuestComplete, _questFunctions.IsQuestAccepted);
+                _questController.PriorityManager.RemoveCompleted(_questFunctions.IsQuestFinishedForPriorityRemoval, _questFunctions.IsQuestAccepted);
             ImGui.SameLine();
 
             using (ImRaii.Disabled(!ImGui.IsKeyDown(ImGuiKey.ModCtrl)))
@@ -485,17 +490,34 @@ internal sealed class PriorityWindow : LWindow
             2110,2053, // Dark Knight
             2123,2012 // Astrologian
         ]).FromNumericListOfQuests();
+        List<ElementId> unlockCustomDeliveries = ((ushort[])[
+            2095,2097,2098,1551,                                // zhloe aliapoh
+            2941,3005,                                          // m'naago
+            2632,2704,2705,2706,2707,3139,                      // kurenai
+            2758,3177,                                          // adkiragh
+            3603,3729,                                          // kai-shirr
+            3672,3725,3726,3727,3728,3837,3889,                 // ehll tou
+            3955,3956,3957,3958,3960,3999,4000,4001,4002,4079,  // charlemend
+            4175,4523,                                          // ameliance
+            4715,                                               // anden
+            4815,                                               // margrat
+            5008,5239,                                          // nitowikwe
+            5460,                                               // tiisol ja
+        ]).FromNumericListOfQuests();
         var aetherCurrents = _T<Addon>(2445);
         var roleQuests = _T<JournalCategory>(95);
         _builtInPresets = new(StringComparer.Ordinal)
         {
             [JobQuestsPresetName] = [],
+            [_T<ContentRoulette>(8)] = ((ushort[])[4959, 5013, 5014]).FromNumericListOfQuests(),
             [_L("Unlock all jobs")] = jobUnlocks,
             [_L("Gil (set TextAdvance to prefer Gil sacks)")] = gilList,
             [_L("Post-ARR unlocks")] = postARRUnlocks,
             [_T<JournalGenre>(94)] = QuestData.DeliveryMoogleQuests.ToList(),
             [_T<JournalCategory>(16)] = QuestData.HardModePrimals.Cast<ElementId>().ToList(),
             [_T<JournalCategory>(18)] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(),
+            [_T<Addon>(5700)] = unlockCustomDeliveries,
+            [$"{_T<AchievementCategory>(37)}: {_T<BeastTribe>(8).Titleize()}"] = QuestData.UnlockMoogleSocietyQuests.ToList(),
             [$"{aetherCurrents}: {_T<ExVersion>(1)}"] = GetAetherCurrentQuests(397, 398, 399, 400, 401),
             [$"{aetherCurrents}: {_T<ExVersion>(2)}"] = GetAetherCurrentQuests(612, 613, 614, 620, 621, 622),
             [$"{aetherCurrents}: {_T<ExVersion>(3)}"] = GetAetherCurrentQuests(813, 814, 815, 816, 817, 818),

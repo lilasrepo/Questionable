@@ -3,6 +3,7 @@ using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
 namespace Questionable.External;
 
+[RegisterSingleton]
 internal sealed class PandorasBoxIpc : IDisposable
 {
     private static readonly ImmutableHashSet<string> ConflictingFeatures = new HashSet<string>
@@ -65,6 +66,10 @@ internal sealed class PandorasBoxIpc : IDisposable
             {
                 return _getFeatureEnabled.InvokeFunc("Auto Active Time Maneuver") == true;
             }
+            catch (IpcNotReadyError)
+            {
+                return false;
+            }
             catch (IpcError e)
             {
                 if (!_loggedIpcError)
@@ -75,6 +80,24 @@ internal sealed class PandorasBoxIpc : IDisposable
 
                 return false;
             }
+        }
+    }
+
+    public bool SetAutoActiveTimeManeuverEnabled(bool enabled)
+    {
+        try
+        {
+            _setFeatureEnabled.InvokeAction("Auto Active Time Maneuver", enabled);
+            return IsAutoActiveTimeManeuverEnabled == enabled;
+        }
+        catch (IpcNotReadyError)
+        {
+            return false;
+        }
+        catch (IpcError e)
+        {
+            _logger.LogWarning(e, "Could not set Pandora's Box auto active time maneuver to {Enabled}", enabled);
+            return false;
         }
     }
 

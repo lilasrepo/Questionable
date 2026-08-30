@@ -5,6 +5,7 @@ using Dalamud.Interface.Utility.Raii;
 using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.JournalComponents;
 
+[RegisterSingleton]
 internal sealed class QuestJournalComponent
 (
     JournalData journalData,
@@ -135,7 +136,7 @@ internal sealed class QuestJournalComponent
         ImGui.TableNextColumn();
 
         string genreName = filter.Genre.Name;
-        if (filter.Genre.Id != JournalData.InstantQuests && questRegistry.TryGetQuest(filter.Quests[0].QuestId, out Quest? q))
+        if (filter.Genre.Id != JournalData.GenreInstantQuests && questRegistry.TryGetQuest(filter.Quests[0].QuestId, out Quest? q))
         {
             RedoIndex redoIndex = redoUtil.GetChapter(q.Id.Value);
             if (redoIndex.Index != -1)
@@ -216,7 +217,6 @@ internal sealed class QuestJournalComponent
 
         ImGui.TableNextColumn();
         float spacing;
-        // ReSharper disable once UnusedVariable
         using (IDisposable font = pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
         {
             spacing = ImGui.GetColumnWidth() / 2 - ImGui.CalcTextSize(FontAwesomeIcon.Check.ToIconString()).X;
@@ -273,7 +273,8 @@ internal sealed class QuestJournalComponent
 
         ImGui.TableNextColumn();
         (Vector4 color, FontAwesomeIcon icon, string text) = uiUtils.GetQuestStyle(questInfo.QuestId);
-        if (uiUtils.ChecklistItem(text.Split(':')[0], color, icon))
+        uint? iconOverride = questJournalUtils.GetIconOverride(questInfo, icon);
+        if (uiUtils.ChecklistItem(text.Split(':')[0], color, icon, iconOverride: iconOverride))
             ImGui.SetTooltip(text);
     }
 
@@ -439,6 +440,14 @@ internal sealed class QuestJournalComponent
             (!questRegistry.TryGetQuest(questInfo.QuestId, out Quest? quest) || quest.Root.Disabled))
             return false;
 
+        if (filter.HideCompleted && questFunctions.IsQuestComplete(questInfo.QuestId))
+            return false;
+
+        if (filter.HideUnobtainable && questFunctions.IsQuestUnobtainable(questInfo.QuestId))
+            return false;
+
+        if (filter.HideRepeatable && questInfo.IsRepeatable)
+            return false;
         return true;
     }
 
@@ -460,16 +469,25 @@ internal sealed class QuestJournalComponent
     {
         public bool AvailableOnly;
         public bool HideNoPaths;
+        public bool HideCompleted;
+        public bool HideUnobtainable;
+        public bool HideRepeatable;
         public string SearchText = string.Empty;
 
-        public bool AdvancedFiltersActive => AvailableOnly || HideNoPaths;
+        public bool AdvancedFiltersActive =>
+            AvailableOnly ||
+            HideNoPaths ||
+            HideCompleted;
 
         public FilterConfiguration WithoutName()
         {
             return new()
             {
                 AvailableOnly = AvailableOnly,
-                HideNoPaths = HideNoPaths
+                HideNoPaths = HideNoPaths,
+                HideCompleted = HideCompleted,
+                HideUnobtainable = HideUnobtainable,
+                HideRepeatable = HideRepeatable
             };
         }
     }

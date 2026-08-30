@@ -7,8 +7,10 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Questionable.Model.Common;
 using Questionable.Model.Questing;
+using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.JournalComponents;
 
+[RegisterSingleton]
 internal sealed class QuestJournalUtils
 (
     QuestController questController,
@@ -196,7 +198,10 @@ internal sealed class QuestJournalUtils
             return;
 
         if (ImGui.Checkbox(_L("Show only Available Quests"), ref journalUi.Filter.AvailableOnly) ||
-            ImGui.Checkbox(_L("Hide Quests Without Path"), ref journalUi.Filter.HideNoPaths))
+            ImGui.Checkbox(_L("Hide Quests Without Path"), ref journalUi.Filter.HideNoPaths) ||
+            ImGui.Checkbox(_L("Hide Completed Quests"), ref journalUi.Filter.HideCompleted) ||
+            ImGui.Checkbox(_L("Hide Unobtainable Quests"), ref journalUi.Filter.HideUnobtainable) ||
+            ImGui.Checkbox(_L("Hide Repeatable Quests"), ref journalUi.Filter.HideRepeatable))
         {
             journalUi.UpdateFilter();
         }
@@ -270,5 +275,35 @@ internal sealed class QuestJournalUtils
         else
             if (aetheryteData.NearestAetheryteTo(location.Territory.RowId, location.Position) is { } aetheryte)
                 aetheryteFunctions.TeleportAetheryte(aetheryte);
+    }
+
+    public uint? GetIconOverride(QuestInfo questInfo, FontAwesomeIcon icon, Vector4? color = null)
+    {
+        const uint QuestionIcon = 71226;
+        const uint BlueRepeatable = 71342;
+        uint? iconOverride = null;
+        if (configuration.General.QuestIcons)
+        {
+            if (color != null)
+            {
+                if (color == QstTheme.Info)
+                    iconOverride = BlueRepeatable;
+                else if (icon is FontAwesomeIcon.Running)
+                    iconOverride = questInfo.AvailableIcon + 1;
+            }
+            else if (icon is FontAwesomeIcon.Running)
+                iconOverride = questInfo.AvailableIcon;
+            if (icon is FontAwesomeIcon.PersonWalkingArrowRight)
+                iconOverride = questInfo.ActiveIcon;
+            if (icon is FontAwesomeIcon.Times)
+                iconOverride = questInfo.InvalidIcon;
+            if (icon is FontAwesomeIcon.Check)
+                iconOverride = questInfo.CompleteIcon;
+            if (questInfo.IsRepeatable && iconOverride % 10 < 2)
+                iconOverride = iconOverride + (2 - iconOverride % 10);
+            if (icon is FontAwesomeIcon.QuestionCircle)
+                iconOverride = QuestionIcon;
+        }
+        return configuration.General.QuestIcons ? iconOverride : null;
     }
 }

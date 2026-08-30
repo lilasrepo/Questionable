@@ -1,1 +1,1 @@
-- Bug fix maybe: increased default delay from .25 seconds back up to .75 seconds -alydev
+- Feature: Priority preset to unlock Level Cap Dungeons roulette -alydev

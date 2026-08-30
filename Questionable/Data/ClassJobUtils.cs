@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Application.Network.WorkDefinitions;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -8,6 +8,7 @@ using Lumina.Excel.Sheets;
 using Questionable.Model.Questing;
 namespace Questionable.Data;
 
+[RegisterSingleton]
 internal sealed class ClassJobUtils
 {
     private readonly ReadOnlyDictionary<Job, sbyte> _classJobToExpArrayIndex;
@@ -80,6 +81,10 @@ internal sealed class ClassJobUtils
             EExtendedClassJob.Sage => [Job.SGE],
             EExtendedClassJob.Viper => [Job.VPR],
             EExtendedClassJob.Pictomancer => [Job.PCT],
+            // porting-note(api13): Beastmaster is a 7.5 job. TC runs game 7.20 and the
+            // walk-back ECommons Job enum stops at PCT (42), so there is no value to map
+            // to. Returning nothing makes any BST-gated quest simply never match.
+            EExtendedClassJob.Beastmaster => [],
 
             EExtendedClassJob.DoW => Enum.GetValues<Job>().Where(GameDataAdapter.DealsPhysicalDamage),
             EExtendedClassJob.DoM => Enum.GetValues<Job>().Where(GameDataAdapter.DealsMagicDamage),
@@ -116,7 +121,7 @@ internal sealed class ClassJobUtils
         else if (jobType is EExtendedClassJob.DoL)
             configuredJob = _configuration.General.GatheringJob;
         else
-            return Job.ADV;
+            return (ushort)jobType < Enum.GetNames(typeof(Job)).Length ? (Job)jobType : Job.ADV;
         ReadOnlyCollection<(Job ClassJob, short Level, short ItemLevel)> jobGearSets = GetJobGearSets(jobType is EExtendedClassJob.ConfiguredCombatJob);
         HashSet<Job> jobsWithGearSet = jobGearSets
             .Select(x => x.ClassJob)

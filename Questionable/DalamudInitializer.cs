@@ -14,6 +14,7 @@ using Questionable.Windows;
 using static Questionable.Utils.LocalizeShortcut;
 namespace Questionable;
 
+[RegisterSingleton]
 internal sealed class DalamudInitializer : IDisposable
 {
     private readonly Configuration _configuration;

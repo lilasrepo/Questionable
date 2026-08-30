@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 
 namespace Questionable.Utils;
 
@@ -39,15 +40,54 @@ internal static class LocalizeShortcut
         if (_translatedStrings.TryGetValue((typeof(T), rowId), out var match))
             return match;
 
-        string value = _dataManager.GetExcelSheet<T>(_clientState.ClientLanguage).GetRow(rowId) switch
+        // porting-note(api13): upstream's version is GetRow(rowId) with a four-arm switch and a
+        // throw on the default arm. Both halves are load-bearing hazards HERE and nowhere upstream:
+        //
+        //  * the throw. EventInfoComponent's EventQuests is a STATIC FIELD initializer, so an
+        //    unmapped sheet type surfaces as TypeInitializationException and the seasonal-event
+        //    panel takes QuestWindow.DrawContent down with it. Upstream keeps the switch in step
+        //    with its own call sites; this file is PINNED, so every new _T<Sheet> upstream adds
+        //    arrives here unmapped. BannerBg did exactly that on 2026-08-30.
+        //  * GetRow. It throws on a row id TC's 7.20 sheets do not have, which is a live risk for
+        //    seasonal-event rows added in later patches.
+        //
+        // So: resolve the row leniently, keep an explicit arm per known sheet (exact semantics),
+        // and fall back to reflection over any ReadOnlySeString Name/Text column before giving up
+        // on a harmless placeholder. A missing event label is a cosmetic loss; a throw is not.
+        object? row = _dataManager.GetExcelSheet<T>(_clientState.ClientLanguage).GetRowOrDefault(rowId);
+        string value = row switch
         {
+            null => $"{typeof(T).Name}#{rowId}",
             JournalGenre g => g.Name.ExtractText(),
             JournalCategory c => c.Name.ExtractText(),
             Addon a => a.Text.ExtractText(),
             ExVersion v => v.Name.ExtractText(),
-            _ => throw new InvalidOperationException($"No known Name/Text mapping for {typeof(T).Name}")
+            BannerBg b => b.Name.ExtractText(),
+            ContentRoulette r => r.Name.ExtractText(),
+            BeastTribe bt => bt.Name.ExtractText(),
+            // api13's FittingShopCategory has no named text column -- the single
+            // ReadOnlySeString on the struct is generated as Unknown0.
+            FittingShopCategory fs => fs.Unknown0.ExtractText(),
+            _ => ExtractAnyText(row) ?? $"{typeof(T).Name}#{rowId}"
         };
         _translatedStrings[(typeof(T), rowId)] = value;
         return value;
+    }
+
+    /// <summary>
+    ///     Last-resort text lookup for a sheet row this file has no explicit arm for: the first
+    ///     ReadOnlySeString field named Name or Text. Keeps an unmapped sheet cosmetic instead of
+    ///     fatal, so a refresh that introduces a new _T&lt;Sheet&gt; cannot fail plugin load.
+    /// </summary>
+    private static string? ExtractAnyText(object row)
+    {
+        foreach (string name in (string[])["Name", "Text"])
+        {
+            var field = row.GetType().GetField(name);
+            if (field?.GetValue(row) is ReadOnlySeString text)
+                return text.ExtractText();
+        }
+
+        return null;
     }
 }

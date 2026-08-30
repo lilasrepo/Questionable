@@ -17,6 +17,7 @@ namespace Questionable.Controller.GameUi;
 ///     Handles the in-game "SelectYesno" and "DifficultySelectYesNo" addons — answering quest
 ///     dialogue prompts, travel confirmations, HQ-trade prompts and quest-battle difficulty selection.
 /// </summary>
+[RegisterSingleton]
 internal sealed class YesNoChoiceHandler : IDisposable
 {
     private readonly IAddonLifecycle _addonLifecycle;

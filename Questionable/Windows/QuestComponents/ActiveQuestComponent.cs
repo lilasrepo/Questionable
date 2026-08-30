@@ -14,6 +14,7 @@ using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows.QuestComponents;
 
 // TODO: refactor — heavy nesting (43 lines indented ≥6 levels, max indent ~13 levels).
+[RegisterSingleton]
 internal sealed partial class ActiveQuestComponent
 (
     QuestController questController,
@@ -32,6 +33,8 @@ internal sealed partial class ActiveQuestComponent
     QuickAccessButtonsComponent quickAccessButtonsComponent,
     CreationUtilsComponent creationUtilsComponent,
     ClassJobUtils classJobUtils,
+    QuestJournalUtils questJournalUtils,
+    GameIcons gameIcons,
     ILogger<ActiveQuestComponent> logger)
 {
     [GeneratedRegex(@"\s\s+", RegexOptions.IgnoreCase, "en-US")]
@@ -178,11 +181,13 @@ internal sealed partial class ActiveQuestComponent
 
                 foreach (IQuestInfo qInfo in GetTrackedQuests())
                 {
+                    if (!questFunctions.prereqCache.ContainsKey(qInfo.QuestId.Value))
+                        questFunctions.PopulatePrereqCache(qInfo.QuestId.Value, qInfo);
                     (bool isLocked, string[]? reasons) = questFunctions.IsQuestLocked(qInfo.QuestId);
                     QuestManager* questManager = QuestManager.Instance();
-                    (var _1, var _2, string status) = uiUtils.GetQuestStyle(qInfo.QuestId);
+                    (var _color, var icon, string status) = uiUtils.GetQuestStyle(qInfo.QuestId);
                     bool acceptedButHidden = questFunctions.IsQuestAccepted(qInfo.QuestId) && questManager->GetQuestById(qInfo.QuestId.Value)->IsHidden;
-                    if (uiUtils.ChecklistItem($"{qInfo.Name} ({qInfo.QuestId})", complete: false))
+                    if (uiUtils.ChecklistItem($"{qInfo.Name} ({qInfo.QuestId})", _color, icon, iconOverride: questJournalUtils.GetIconOverride((QuestInfo)qInfo, icon)))
                         if (reasons != null && reasons.Length > 0)
                             ImGui.SetTooltip(status + "\n  " + string.Join("\n  ", reasons));
                         else if (acceptedButHidden)
@@ -282,7 +287,11 @@ internal sealed partial class ActiveQuestComponent
                     }
                 }
 
-                ImGui.TextUnformatted(_L("Quest: ") + Shorten(currentQuest.Quest.Info.Name));
+                uint? iconOverride = questJournalUtils.GetIconOverride((QuestInfo)currentQuest.Quest.Info, FontAwesomeIcon.PersonWalkingArrowRight);
+                if (iconOverride is { } iconId && gameIcons.DrawInline(iconId))
+                    ImGui.TextUnformatted(Shorten(currentQuest.Quest.Info.Name));
+                else
+                    ImGui.TextUnformatted(_L("Quest: ") + Shorten(currentQuest.Quest.Info.Name));
                 ImGui.SameLine();
                 QstWidgets.Chip($"#{currentQuest.Quest.Id}", QstTheme.Info);
                 var acceptedJob = classJobUtils.LookupQuestStartJob(currentQuest.Quest.Id);
@@ -311,6 +320,7 @@ internal sealed partial class ActiveQuestComponent
                                                 configuration.Stop.QuestsToStopWhenAccepted.Any(x =>
                                                     !questFunctions.IsQuestAcceptedOrComplete(x) &&
                                                     !questFunctions.IsQuestUnobtainable(x));
+                bool preventQuestCompletion = configuration.Advanced.PreventQuestCompletion;
 
                 List<PriorityQuestInfo> priorityQuests = questFunctions.NextPriorityQuestsThatCanBeAccepted;
                 bool anyAvailable = false;
@@ -322,7 +332,7 @@ internal sealed partial class ActiveQuestComponent
                     if (anyAvailable && anyUnavailable) break;
                 }
 
-                bool showStopClock = hasLevelCondition || hasCompleteQuestConditions || hasAcceptQuestConditions;
+                bool showStopClock = hasLevelCondition || hasCompleteQuestConditions || hasAcceptQuestConditions || preventQuestCompletion;
                 bool showPriorityCrystal = anyAvailable || anyUnavailable;
                 if (showStopClock || showPriorityCrystal)
                     ImGui.SameLine();
@@ -382,7 +392,7 @@ internal sealed partial class ActiveQuestComponent
                                 if (questRegistry.TryGetQuest(questId, out Quest? quest))
                                 {
                                     (Vector4 color, FontAwesomeIcon icon, string _) = uiUtils.GetQuestStyle(questId);
-                                    uiUtils.ChecklistItem($"{quest.Info.Name} ({questId})", color, icon);
+                                    uiUtils.ChecklistItem($"{quest.Info.Name} ({questId})", color, icon, iconOverride: questJournalUtils.GetIconOverride((QuestInfo)quest.Info, icon));
                                 }
                             }
 
@@ -401,11 +411,19 @@ internal sealed partial class ActiveQuestComponent
                                 if (questRegistry.TryGetQuest(questId, out Quest? quest))
                                 {
                                     (Vector4 color, FontAwesomeIcon icon, string _) = uiUtils.GetQuestStyle(questId);
-                                    uiUtils.ChecklistItem($"{quest.Info.Name} ({questId})", color, icon);
+                                    uiUtils.ChecklistItem($"{quest.Info.Name} ({questId})", color, icon, iconOverride: questJournalUtils.GetIconOverride((QuestInfo)quest.Info, icon));
                                 }
                             }
 
                             ImGui.Unindent();
+                        }
+
+                        if (preventQuestCompletion)
+                        {
+                            if (hasLevelCondition || hasCompleteQuestConditions || hasAcceptQuestConditions)
+                                ImGui.Spacing();
+
+                            ImGui.BulletText(_L("Prevent quest completion"));
                         }
                     }
                 }
@@ -755,16 +773,16 @@ internal sealed partial class ActiveQuestComponent
     public void DrawTitleBarPill(string windowTitle)
     {
         if (combatController.IsRunning)
-            QstWidgets.TitleBarPill(_L("Combat"), QstTheme.Accent, windowTitle);
+            QstWidgets.TitleBarPill(_L("Combat"), QstTheme.Accent, windowTitle, alignCenter: configuration.General.TitleBarPillCenter);
         else if (questController.IsRunning
                  && (questController.StopAfterCurrentQuest
                      || questController.StopAfterAcceptingNextQuest
                      || questController.StopBeforeTeleport))
-            QstWidgets.TitleBarPill(_L("Stopping"), QstTheme.Amber, windowTitle);
+            QstWidgets.TitleBarPill(_L("Stopping"), QstTheme.Amber, windowTitle, alignCenter: configuration.General.TitleBarPillCenter);
         else if (questController.IsRunning)
-            QstWidgets.TitleBarPill(_L("Running"), QstTheme.Success, windowTitle);
+            QstWidgets.TitleBarPill(_L("Running"), QstTheme.Success, windowTitle, alignCenter: configuration.General.TitleBarPillCenter);
         else
-            QstWidgets.TitleBarPill(_L("Idle"), QstTheme.TextMuted, windowTitle);
+            QstWidgets.TitleBarPill(_L("Idle"), QstTheme.TextMuted, windowTitle, alignCenter: configuration.General.TitleBarPillCenter);
     }
 
     private static float CalculateQuestProgress(QuestController.QuestProgress progress)

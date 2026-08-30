@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Library</OutputType>
         <TargetFramework>net9.0-windows</TargetFramework>
@@ -26,10 +26,21 @@
 
     <ItemGroup>
         <PackageReference Include="DalamudPackager" Version="13.1.0" />
+        <!-- Added 2026-08-30: upstream moved DI registration onto the Injectio source generator
+             ([RegisterSingleton]/[RegisterTransient] on ~122 classes). Injectio 6.1.0 is
+             analyzer-only (the package ships no lib/ folder at all), so it is TFM-agnostic and
+             safe on net9, unlike almost every other api15-era package. -->
+        <PackageReference Include="Injectio" Version="6.1.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" ExcludeAssets="runtime" />
         <PackageReference Include="JsonSchema.Net" Version="7.3.4" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+        <!-- Added 2026-08-30: upstream Windows/Common/Ui/GameIcons.cs now uses ImageSharp.
+             3.1.12 targets net6.0, so net9 consumes it fine. -->
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
         <PackageReference Include="System.Text.Json" Version="9.0.3" />
     </ItemGroup>
 

@@ -7,6 +7,7 @@ using Dalamud.Game.ClientState.Objects;
 
 namespace Questionable.Functions;
 
+[RegisterSingleton]
 internal sealed class ChatFunctions
 (
     IDataManager dataManager,

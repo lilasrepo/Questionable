@@ -9,6 +9,7 @@ using Dalamud.Interface;
 using PunishLib.ImGuiMethods;
 namespace Questionable.Windows;
 
+[RegisterSingleton]
 internal sealed class ConfigWindow
  : LWindow, IPersistableWindowConfig
 {
@@ -55,9 +56,9 @@ internal sealed class ConfigWindow
             TitleBarButtons.Add(new()
             {
                 Icon = FontAwesomeIcon.Heart,
-                IconOffset = new(1.5f, 1),
-                Click = _ => Process.Start(new ProcessStartInfo { FileName = "https://github.com/sponsors/alydevs", UseShellExecute = true }),
-                Priority = int.MinValue,
+                IconOffset = TitleBarIconOffset,
+                Click = _ => Process.Start(new ProcessStartInfo { FileName = "https://ko-fi.com/alydev", UseShellExecute = true }),
+                Priority = TitleBarButtonPriority,
                 ShowTooltip = () =>
                 {
                     using ImRaii.IEndObject _ = ImRaii.Tooltip();

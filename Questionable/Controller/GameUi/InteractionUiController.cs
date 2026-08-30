@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -28,6 +28,11 @@ using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Questionable.Controller.GameUi;
 
+/// <summary>
+///     Coordinates the per-addon interaction handlers. When automation starts it sweeps any addons
+///     that are already open; live addon events are handled by each handler's own listener.
+/// </summary>
+[RegisterSingleton]
 internal sealed class InteractionUiController : IDisposable
 {
     private readonly IAddonLifecycle _addonLifecycle;

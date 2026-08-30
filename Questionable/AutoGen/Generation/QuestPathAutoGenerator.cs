@@ -58,7 +58,11 @@ public sealed class QuestPathAutoGenerator(QuestGameData gameData, string author
 
         List<QuestSequence> sequences = [BuildAcceptSequence(quest)];
         foreach (byte sequence in CollectSequences(quest, symbols, analysis))
-            sequences.Add(BuildSequence(quest, symbols, analysis, sequence));
+        {
+            QuestSequence? seq = BuildSequence(quest, symbols, analysis, sequence);
+            if (seq != null)
+                sequences.Add(seq);
+        }
         sequences.Add(BuildCompleteSequence(quest, symbols, analysis));
         ApplyEventItemUses(quest, symbols, analysis, sequences);
 
@@ -131,7 +135,7 @@ public sealed class QuestPathAutoGenerator(QuestGameData gameData, string author
     ///     a todo location that names an object is the journal's own marker for the sequence; failing that the
     ///     script's actor for the sequence; failing that a bare todo position with nothing to interact with.
     /// </summary>
-    private QuestSequence BuildSequence(Quest quest, QuestSymbols symbols, QuestScriptAnalysis analysis, byte number)
+    private QuestSequence? BuildSequence(Quest quest, QuestSymbols symbols, QuestScriptAnalysis analysis, byte number)
     {
         QuestSequence sequence = new() { Sequence = number };
 
@@ -220,6 +224,8 @@ public sealed class QuestPathAutoGenerator(QuestGameData gameData, string author
                 sequence.Steps.Add(step);
             }
         }
+        if (sequence.Steps.Count == 0)
+            return null;
 
         return sequence;
     }
@@ -961,9 +967,8 @@ public sealed class QuestPathAutoGenerator(QuestGameData gameData, string author
     ///     Height added to a position taken from a <c>Level</c> row that places no object.
     ///     <para>
     ///         Those rows mark a search area rather than a thing to stand on, and their Y often sits fractionally
-    ///         under the floor. vnavmesh fails outright on a point below the mesh ("got 0 points"), whereas a
-    ///         point above it just projects back down. <c>QuestRegistry.CreateQuestRoot</c> uses 30 for the same
-    ///         reason
+    ///         under the floor. vnavmesh fails outright on a point below the mesh ("got 0 points").
+    ///         <c>QuestRegistry.CreateQuestRoot</c> uses 30 for the same reason
     ///     </para>
     /// </summary>
     private const float AreaHeightPadding = 30f;

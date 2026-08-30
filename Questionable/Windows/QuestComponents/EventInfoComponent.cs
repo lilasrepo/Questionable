@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -8,9 +8,11 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Humanizer;
 using Humanizer.Localisation;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using Questionable.Model.Questing;
 namespace Questionable.Windows.QuestComponents;
 
+[RegisterSingleton]
 internal sealed class EventInfoComponent
 (
     QuestData questData,
@@ -22,10 +24,13 @@ internal sealed class EventInfoComponent
     Configuration configuration)
 {
     private readonly Configuration _configuration = configuration;
-    private readonly List<EventQuest> _eventQuests =
+    internal static readonly List<EventQuest> EventQuests =
     [
         // Add seasonal events here. If a quest has additional required quests (e.g Make It Rain > Gold Saucer), add a relation in QuestData#L220
-        new(_L("Limited Time Items"), [new UnlockLinkId(568)], DateTime.MaxValue)
+        new(_L("Limited Time Items"), [new UnlockLinkId(568)], DateTime.MaxValue),
+        new(_T<Lumina.Excel.Sheets.BannerBg>(233), [new QuestId(2141)], AtDailyReset(2026, 10, 5)),
+        // The Rising 2026
+        new($"{_T<Lumina.Excel.Sheets.FittingShopCategory>(107)} 2026", [new QuestId(5510), new QuestId(5520)], AtDailyReset(2026, 9, 10)),
     ];
     private readonly QuestController _questController = questController;
 
@@ -35,16 +40,15 @@ internal sealed class EventInfoComponent
     private readonly QuestTooltipComponent _questTooltipComponent = questTooltipComponent;
     private readonly UiUtils _uiUtils = uiUtils;
 
-    public bool ShouldDraw => _configuration.General.ShowIncompleteSeasonalEvents && _eventQuests.Any(IsIncomplete);
+    public bool ShouldDraw => _configuration.General.ShowIncompleteSeasonalEvents && EventQuests.Any(IsIncomplete);
 
-    private static DateTime AtDailyReset(DateOnly date) => new(date, new(14, 59), DateTimeKind.Utc);
+    private static DateTime AtDailyReset(int year, int month, int day) => new(new(year, month, day), new(14, 59), DateTimeKind.Utc);
 
     public void Draw()
     {
-        foreach (EventQuest eventQuest in _eventQuests)
+        foreach (EventQuest eventQuest in EventQuests.Where(x => x.EndsAtUtc >= DateTime.UtcNow && x.QuestIds.All(ShouldShowQuest)))
         {
-            if (IsIncomplete(eventQuest))
-                DrawEventQuest(eventQuest);
+            DrawEventQuest(eventQuest);
         }
     }
 
@@ -111,17 +115,51 @@ internal sealed class EventInfoComponent
 
     public IEnumerable<ElementId> GetCurrentlyActiveEventQuests()
     {
-        return _eventQuests
-            .Where(x => x.EndsAtUtc >= DateTime.UtcNow)
-            .SelectMany(x => x.QuestIds)
-            .Where(ShouldShowQuest);
+        return EventQuests
+            .Where(x => x.EndsAtUtc >= DateTime.UtcNow && x.QuestIds.All(ShouldShowQuest))
+            .SelectMany(x => x.QuestIds);
     }
 
     private bool ShouldShowQuest(ElementId elementId)
     {
         return !_questFunctions.IsQuestComplete(elementId) &&
-               !_questFunctions.IsQuestUnobtainable(elementId);
+               !_questFunctions.IsQuestUnobtainable(elementId) &&
+               IsEventRunningHere(elementId);
     }
 
-    private sealed record EventQuest(string Name, List<ElementId> QuestIds, DateTime EndsAtUtc);
+    /// <summary>
+    ///     porting-note(api13): EventQuests is upstream's hand-maintained calendar, with the
+    ///     INTERNATIONAL servers' dates. TC runs the same events on its own schedule, so a date
+    ///     that has not passed upstream says nothing about whether the event is live here --
+    ///     "A Complete Game Changer" (Yo-kai Watch, quest 2141) was listed as running on
+    ///     2026-08-30 while TC was not running it.
+    ///
+    ///     Quests whose row is simply absent from TC's sheet are already handled, by
+    ///     QuestFunctions.IsQuestUnobtainable's missing-quest guard -- that is what hides The
+    ///     Rising 2026 (5510/5520). This is the other half: the row EXISTS on TC, the event just
+    ///     is not on. Ask the client instead of trusting the calendar: a festival-gated quest is
+    ///     only shown while that festival id is in GameMain's ActiveFestivals.
+    ///
+    ///     Deliberately narrow. A quest with no festival gate (Festival row 0) is unaffected, and
+    ///     so is everything that is not a QuestId -- this must not start hiding ordinary content.
+    /// </summary>
+    private unsafe bool IsEventRunningHere(ElementId elementId)
+    {
+        if (elementId is not QuestId questId)
+            return true;
+        if (!_questData.TryGetQuestInfo(questId, out IQuestInfo? info) || info is not QuestInfo questInfo)
+            return true;
+        if (!questInfo.IsSeasonalEvent || questInfo.FestivalId == 0)
+            return true;
+
+        foreach (GameMain.Festival festival in GameMain.Instance()->ActiveFestivals)
+        {
+            if (festival.Id == questInfo.FestivalId)
+                return true;
+        }
+
+        return false;
+    }
+
+    internal sealed record EventQuest(string Name, List<ElementId> QuestIds, DateTime EndsAtUtc);
 }

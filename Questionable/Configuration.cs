@@ -212,6 +212,7 @@ internal sealed class Configuration : IPluginConfiguration
         public EGearsetUpdateSource GearsetUpdateSource { get; set; } = EGearsetUpdateSource.Vanilla;
         public bool HideInAllInstances { get; set; } = true;
         public bool UseQuestionableTheme { get; set; } = true;
+        public bool TitleBarPillCenter { get; set; } = true;
         public bool UseEscToCancelQuesting { get; set; } = true;
         public bool ShowIncompleteSeasonalEvents { get; set; } = true;
         public bool SkipLowPriorityDuties { get; set; }
@@ -229,6 +230,8 @@ internal sealed class Configuration : IPluginConfiguration
         public string Language { get; set; } = "en";
         public bool HideRemainingTasks { get; set; }
         public bool ClaimMail { get; set; }
+        public bool SameJobThroughoutQuest { get; set; }
+        public bool QuestIcons { get; set; } = true;
     }
 
     internal sealed class StopConfiguration

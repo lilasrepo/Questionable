@@ -20,6 +20,7 @@ using Quest = Questionable.Domain.Quest;
 namespace Questionable.Controller;
 
 // TODO: refactor — heavy nesting (35 lines indented ≥6 levels, max indent ~9 levels).
+[RegisterSingleton]
 internal sealed class QuestController : MiniTaskController<QuestController>
 {
     public delegate void AutomationTypeChangedEventHandler(object sender, EAutomationType e);
@@ -653,7 +654,7 @@ internal sealed class QuestController : MiniTaskController<QuestController>
 
                         if (msqState == MainScenarioQuestState.LoadingScreen)
                         {
-                            _logger.LogWarning("On loading screen, no MSQ - doing nothing");
+                            //_logger.LogWarning("On loading screen, no MSQ - doing nothing");
                             return;
                         }
 
@@ -1433,6 +1434,14 @@ internal sealed class QuestController : MiniTaskController<QuestController>
         _chatGui.PrintError($"No associated quest ({info.QuestId}).", "Questionable");
         return false;
     }
+
+    /// <summary>
+    /// Caller should ensure _taskQueue.AllTasksComplete before enqueueing.
+    /// See: CommandHandler's impl of /qst redeem
+    /// </summary>
+    /// <param name="task">An instance of a task produced by a factory or other generator</param>
+    internal void UnsafeEnqueueManualTask(ITask task) =>
+        _taskQueue.Enqueue(task);
 
     public override void Dispose()
     {

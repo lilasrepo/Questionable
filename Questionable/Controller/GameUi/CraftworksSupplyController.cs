@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 namespace Questionable.Controller.GameUi;
 
+[RegisterSingleton]
 internal sealed class CraftworksSupplyController : IDisposable
 {
     private readonly IAddonLifecycle _addonLifecycle;

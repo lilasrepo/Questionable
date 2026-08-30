@@ -6,18 +6,33 @@ using Questionable.Model.Questing;
 using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows;
 
-internal sealed class UiUtils(QuestFunctions questFunctions, IDalamudPluginInterface pluginInterface, QuestData questData)
+[RegisterSingleton]
+internal sealed class UiUtils(
+    QuestFunctions questFunctions,
+    IDalamudPluginInterface pluginInterface,
+    QuestData questData,
+    GameIcons gameIcons)
 {
-    public (Vector4 Color, FontAwesomeIcon Icon, string Status) GetQuestStyle(ElementId elementId)
+    public unsafe (Vector4 Color, FontAwesomeIcon Icon, string Status) GetQuestStyle(ElementId elementId)
     {
         string lockedReason = string.Empty;
+        IQuestInfo? qInfo = null;
         questFunctions.prereqCache.TryGetValue(elementId.Value, out var prereqValue);
         if (questFunctions.IsQuestLocked(elementId) is (bool isLocked, string[] reasons) && isLocked)
             lockedReason = string.Join("\n  ", reasons);
-        else if (questData.TryGetQuestInfo(elementId, out var qInfo) && qInfo is IQuestInfo questInfo &&
-                questInfo.PreviousQuestJoin is EQuestJoin.All &&
-                prereqValue != null && prereqValue.Any(q => questFunctions.IsQuestLocked(q.QuestId) is (bool qIsLocked, string[] reasons) && qIsLocked))
-            lockedReason = _L("Prev quest");
+        else if (questData.TryGetQuestInfo(elementId, out qInfo) && qInfo is IQuestInfo questInfo &&
+                questInfo.PreviousQuestJoin is EQuestJoin.All)
+        {
+            List<string> preReasons = [];
+            if (prereqValue != null)
+                foreach (IQuestInfo q in prereqValue)
+                    if (questFunctions.IsQuestLocked(q.QuestId) is (bool qIsLocked, string[] _reasons) && qIsLocked &&
+                        !questFunctions.IsQuestUnobtainable(q.QuestId))
+                        foreach (string _reason in _reasons)
+                            preReasons.Add($"{q.QuestId.Value}: {_reason}");
+            if (preReasons.Count != 0)
+                lockedReason = _L("Prev quest") + $" ({preReasons[0]}{(preReasons.Count > 1 ? $" +{preReasons.Count - 1}" : "")})";
+        }
 
         if (questFunctions.IsQuestAccepted(elementId))
             return (QstTheme.Amber, FontAwesomeIcon.PersonWalkingArrowRight, _L("Active"));
@@ -39,6 +54,8 @@ internal sealed class UiUtils(QuestFunctions questFunctions, IDalamudPluginInter
             return (QstTheme.Danger, FontAwesomeIcon.Times, $"{_L("Locked")}:\n  {lockedReason}");
         if (prereqValue == null)
             return (QstTheme.Info, FontAwesomeIcon.QuestionCircle, _L("Available(?)"));
+        if (qInfo != null && PlayerState.Instance()->CurrentLevel < qInfo.Level)
+            return (QstTheme.Danger, FontAwesomeIcon.Times, _L("Low level"));
 
         return (QstTheme.Amber, FontAwesomeIcon.Running, _L("Available"));
     }
@@ -53,14 +70,16 @@ internal sealed class UiUtils(QuestFunctions questFunctions, IDalamudPluginInter
         return (QstTheme.Danger, FontAwesomeIcon.Times);
     }
 
-    public bool ChecklistItem(string text, Vector4 color, FontAwesomeIcon icon, float extraPadding = 0)
+    public bool ChecklistItem(string text, Vector4 color, FontAwesomeIcon icon, float extraPadding = 0, uint? iconOverride = null)
     {
         if (extraPadding > 0)
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + extraPadding);
-
-        using (pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
+        if (iconOverride is not { } iconId || !gameIcons.DrawInline(iconId))
         {
-            ImGui.TextColored(color, icon.ToIconString());
+            using (pluginInterface.UiBuilder.IconFontFixedWidthHandle.Push())
+            {
+                ImGui.TextColored(color, icon.ToIconString());
+            }
         }
 
         bool hover = ImGui.IsItemHovered();

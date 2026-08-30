@@ -1,51 +1,11 @@
 ﻿{
   "$schema": "https://qstxiv.github.io/schema/quest-v1.json",
   "Author": "liza",
-  "LastChecked": {"Username": "Iskierka", "Date": "2026-07-11"},
+  "LastChecked": {"Username": "alydev", "Date": "2026-08-21"},
   "QuestSequence": [
     {
       "Sequence": 0,
       "Steps": [
-        {
-          "TerritoryId": 156,
-          "DataId": 2002881,
-          "Position": {
-            "X": 21.133728,
-            "Y": 22.323914,
-            "Z": -631.281
-          },
-          "InteractionType": "Interact",
-          "TargetTerritoryId": 351,
-          "AetheryteShortcut": "Mor Dhona",
-          "SkipConditions": {
-            "StepIf": {
-              "InTerritory": [
-                351
-              ]
-            },
-            "AetheryteShortcutIf": {
-              "InTerritory": [
-                351
-              ]
-            }
-          }
-        },
-        {
-          "DataId": 2002878,
-          "Position": {
-            "X": -0.015319824,
-            "Y": -1.0223389,
-            "Z": -26.779602
-          },
-          "TerritoryId": 351,
-          "InteractionType": "Interact",
-          "TargetTerritoryId": 351,
-          "SkipConditions": {
-            "StepIf": {
-              "ExtraCondition": "RisingStonesSolar"
-            }
-          }
-        },
         {
           "DataId": 1014565,
           "Position": {
@@ -55,7 +15,6 @@
           },
           "StopDistance": 7,
           "TerritoryId": 351,
-          "TargetTerritoryId": 351,
           "InteractionType": "AcceptQuest"
         }
       ]
@@ -65,24 +24,25 @@
       "Steps": [
         {
           "Position": {
-            "X": -523.8519,
-            "Y": 22.025784,
-            "Z": -512.0333
+            "X": 212.12222,
+            "Y": 256.37268,
+            "Z": -3.8163254
           },
           "TerritoryId": 402,
           "InteractionType": "WalkTo",
-          "AetheryteShortcut": "Azys Lla - Helix",
-          "Fly": true
-        },
-        {
-          "Position": {
-            "X": -231.93713,
-            "Y": 303.47726,
-            "Z": -311.9725
-          },
-          "TerritoryId": 402,
-          "InteractionType": "WalkTo",
-          "Fly": true
+          "SkipConditions": {
+            "StepIf": {
+              "NotNearPosition": {
+                "Position": {
+                  "X": 155.45001,
+                  "Y": 245.1,
+                  "Z": -5.448744
+                },
+                "TerritoryId": 402,
+                "MaximumDistance": 50
+              }
+            }
+          }
         },
         {
           "DataId": 2007560,
@@ -146,29 +106,6 @@
     {
       "Sequence": 255,
       "Steps": [
-        {
-          "TerritoryId": 156,
-          "DataId": 2002881,
-          "Position": {
-            "X": 21.133728,
-            "Y": 22.323914,
-            "Z": -631.281
-          },
-          "InteractionType": "Interact",
-          "TargetTerritoryId": 351,
-          "AetheryteShortcut": "Mor Dhona"
-        },
-        {
-          "DataId": 2002878,
-          "Position": {
-            "X": -0.015319824,
-            "Y": -1.0223389,
-            "Z": -26.779602
-          },
-          "TerritoryId": 351,
-          "InteractionType": "Interact",
-          "TargetTerritoryId": 351
-        },
         {
           "DataId": 1014565,
           "Position": {

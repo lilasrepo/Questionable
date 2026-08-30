@@ -1,4 +1,4 @@
-﻿# Auto-learned walkback paths — see SKILL.md.
+# Auto-learned walkback paths — see SKILL.md.
 # Auto-promoted by plugin_update on 2026-06-01
 Questionable/Questionable.csproj
 Questionable/Questionable.json
@@ -23,3 +23,12 @@ Questionable/Domain/ItemReward.cs
 # upstream's analyzer-only version and the plugin silently ships 31 absolute local paths again
 # (baked [CallerFilePath] literals) plus a SourceLink blob. See commit 336e4b26.
 Directory.Build.props
+
+# 2026-08-30 -- upstream moved the bootstrap to a primary-constructor IAsyncDalamudPlugin
+# with LoadAsync/DisposeAsync. IAsyncDalamudPlugin is API15-only, so the TC file is a
+# hand-written synchronous IDalamudPlugin: explicit constructor, same-named readonly
+# service fields, load performed inline, sync Dispose. Fully TC-owned, hence a pin rather
+# than a gate. Cost, accepted deliberately: upstream additions to the service registration
+# list no longer arrive on their own and have to be ported in by hand, the same way
+# Domain/QuestInfo.cs already works.
+Questionable/QuestionablePlugin.cs

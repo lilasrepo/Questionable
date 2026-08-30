@@ -10,6 +10,7 @@ using Questionable.Windows.Common;
 using Questionable.Windows.Common.Ui;
 namespace Questionable.Windows;
 
+[RegisterSingleton]
 internal sealed class QuestSelectionWindow : LWindow
 {
     private const string WindowId = "###QuestionableQuestSelection";
@@ -105,14 +106,17 @@ internal sealed class QuestSelectionWindow : LWindow
         WindowName = _LF("Quests starting in {0}", territoryName) + $"{WindowId}";
 
         _quests = _questRegistry.AllQuests
-            .Where(x => x.FindSequence(0)?.FindStep(0)?.TerritoryId == territoryId)
+            .Where(x => x.FindSequence(0)?.FindStep(0)?.TerritoryId == territoryId &&
+                        !_questFunctions.IsQuestUnobtainable(x.Id) &&
+                        x.Id is QuestId qId &&
+                        !_questFunctions.IsDailyAlliedSocietyQuest(qId))
             .Select(x => _questData.GetQuestInfo(x.Id))
             .ToList();
 
         foreach (MarkerInfo unacceptedQuest in Map.Instance()->UnacceptedQuestMarkers)
         {
             QuestId questId = QuestId.FromRowId(unacceptedQuest.ObjectiveId);
-            if (_quests.All(q => q.QuestId != questId))
+            if (_quests.All(q => q.QuestId != questId) && !_questFunctions.IsDailyAlliedSocietyQuest(questId))
                 _quests.Add(_questData.GetQuestInfo(questId));
         }
 

@@ -10,6 +10,7 @@ using Questionable.Windows.Common.Ui;
 using GrandCompany = FFXIVClientStructs.FFXIV.Client.UI.Agent.GrandCompany;
 namespace Questionable.Windows.ConfigComponents;
 
+[RegisterSingleton]
 internal sealed class GeneralConfigComponent : ConfigComponent
 {
     private static readonly (uint Id, string Name) DefaultMount = (0, _L("Mount Roulette"));
@@ -91,20 +92,7 @@ internal sealed class GeneralConfigComponent : ConfigComponent
             { "en",    _L("English") },
             { "ja-jp", _L("Japanese") },
             { "zh-cn", _L("Chinese (Simplified)") },
-            { "af",    _L("Afrikaans") + " (WIP)" },
-            { "ar",    _L("Arabic") + " (WIP)" },
-            { "sq",    _L("Albanian") + " (WIP)" },
-            { "eu",    _L("Basque") + " (WIP)" },
-            { "be",    _L("Belarusian") + " (WIP)" },
-            { "bg",    _L("Bulgarian") + " (WIP)" },
-            { "ca",    _L("Catalan") + " (WIP)" },
-            { "zh-tw", _L("Chinese (Traditional)") + " (WIP)" },
-            { "hr",    _L("Croatian") + " (WIP)" },
-            { "cs",    _L("Czech") + " (WIP)" },
-            { "en-au", _L("English (Australian)") + " (WIP)" },
-            { "fr",    _L("French") + " (WIP)" },
-            { "de",    _L("German") + " (WIP)" },
-            { "es",    _L("Spanish") + " (WIP)" },
+            { "ko",    _L("Korean") + " (WIP)" }
         };
         string language = Configuration.General.Language;
         if (ImGuiComponentsLocal.DrawSearchableCombo(_L("Language"), languages.Keys.ToArray(), languages.Values.ToArray(),
@@ -278,6 +266,13 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                     Configuration.General.HideRemainingTasks = hideRemainingTasks;
                     Save();
                 }
+
+                bool questIcons = Configuration.General.QuestIcons;
+                if (ImGui.Checkbox(_L("Show quest icons"), ref questIcons))
+                {
+                    Configuration.General.QuestIcons = questIcons;
+                    Save();
+                }
             }
         }
 
@@ -336,18 +331,12 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                             Save();
                         }
                     }
-                    if (dontSkipCutscenes)
-                    {
-                        using (ImRaii.PushIndent(2))
-                        {
-                            bool dontShowAnswerSuggestions = Configuration.General.DontShowAnswerSuggestions;
-                            if (ImGui.Checkbox(_L("and don't show which answer we would have picked for you"), ref dontShowAnswerSuggestions))
-                            {
-                                Configuration.General.DontShowAnswerSuggestions = dontShowAnswerSuggestions;
-                                Save();
-                            }
-                        }
-                    }
+                }
+                bool dontShowAnswerSuggestions = Configuration.General.DontShowAnswerSuggestions;
+                if (ImGui.Checkbox(_L("Hide dialogue answer suggestions/notifications"), ref dontShowAnswerSuggestions))
+                {
+                    Configuration.General.DontShowAnswerSuggestions = dontShowAnswerSuggestions;
+                    Save();
                 }
 
                 bool skipLowPriorityInstances = Configuration.General.SkipLowPriorityDuties;
@@ -393,6 +382,13 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                     {
                         ImGui.Text(_L("Ideally this should be set in the in-game Teleport settings, but is provided here for convenience."));
                     }
+                }
+
+                bool sameJobThroughoutQuest = Configuration.General.SameJobThroughoutQuest;
+                if (ImGui.Checkbox(_L("Before each Interact, switch to the job a quest was accepted with"), ref sameJobThroughoutQuest))
+                {
+                    Configuration.General.SameJobThroughoutQuest = sameJobThroughoutQuest;
+                    Save();
                 }
 
                 //bool claimMail = Configuration.General.ClaimMail;
