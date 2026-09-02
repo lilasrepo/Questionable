@@ -273,7 +273,7 @@ internal sealed class QuestJournalComponent
 
         ImGui.TableNextColumn();
         (Vector4 color, FontAwesomeIcon icon, string text) = uiUtils.GetQuestStyle(questInfo.QuestId);
-        uint? iconOverride = questJournalUtils.GetIconOverride(questInfo, icon);
+        uint? iconOverride = QuestJournalUtils.GetIconOverride(questInfo, icon);
         if (uiUtils.ChecklistItem(text.Split(':')[0], color, icon, iconOverride: iconOverride))
             ImGui.SetTooltip(text);
     }
@@ -436,6 +436,9 @@ internal sealed class QuestJournalComponent
         if (filter.AvailableOnly && !questFunctions.IsReadyToAcceptQuest(questInfo.QuestId))
             return false;
 
+        if (filter.BlueOnly && ((QuestInfo)questInfo).AvailableIcon is uint icon && !Enumerable.Range(40, 10).Contains((int)icon % 100))
+            return false;
+
         if (filter.HideNoPaths &&
             (!questRegistry.TryGetQuest(questInfo.QuestId, out Quest? quest) || quest.Root.Disabled))
             return false;
@@ -468,6 +471,7 @@ internal sealed class QuestJournalComponent
     internal sealed class FilterConfiguration
     {
         public bool AvailableOnly;
+        public bool BlueOnly;
         public bool HideNoPaths;
         public bool HideCompleted;
         public bool HideUnobtainable;
@@ -476,14 +480,18 @@ internal sealed class QuestJournalComponent
 
         public bool AdvancedFiltersActive =>
             AvailableOnly ||
+            BlueOnly ||
             HideNoPaths ||
-            HideCompleted;
+            HideCompleted ||
+            HideUnobtainable ||
+            HideRepeatable;
 
         public FilterConfiguration WithoutName()
         {
             return new()
             {
                 AvailableOnly = AvailableOnly,
+                BlueOnly = BlueOnly,
                 HideNoPaths = HideNoPaths,
                 HideCompleted = HideCompleted,
                 HideUnobtainable = HideUnobtainable,

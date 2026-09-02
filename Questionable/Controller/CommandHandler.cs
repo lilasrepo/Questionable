@@ -374,9 +374,8 @@ internal sealed class CommandHandler : IDisposable
                     List<string> taxiStands = [];
                     ExcelSheet<ChocoboTaxiStand> taxiStandNames = _dataManager.GetExcelSheet<ChocoboTaxiStand>();
                     UIState* uiState = UIState.Instance();
-                    // B1: API12 UIState lacks UnlockedChocoboTaxiStands (game-7.5 field).
-                    // Use a conservative iteration upper bound covering known taxi stand IDs.
-                    for (byte i = 0; i < 64; ++i)
+                    // porting-note(api13): restored 2026-09-02 — UIState.UnlockedChocoboTaxiStands exists in CS 6966
+                    for (byte i = 0; i < uiState->UnlockedChocoboTaxiStands.Length * 8; ++i)
                     {
                         if (!(uiState->IsChocoboTaxiStandUnlocked(i)) && taxiStandNames.HasRow(i + 0x120000u))
                         {

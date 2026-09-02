@@ -1,1 +1,1 @@
-- Feature: Priority preset to unlock Level Cap Dungeons roulette -alydev
+- Bug fix: Post-combat item use was broken by recent internal change, fixed -alydev

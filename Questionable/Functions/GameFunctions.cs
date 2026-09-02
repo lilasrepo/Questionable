@@ -169,13 +169,13 @@ internal sealed unsafe partial class GameFunctions
         if (gameObject != null)
         {
             Vector3 position = gameObject.Position;
-            return ActionManager.Instance()->UseActionLocation(ActionType.KeyItem /* TODO(api12): API12 has no EventItem; KeyItem is closest match */, itemId, location: &position);
+            return ActionManager.Instance()->UseActionLocation(ActionType.EventItem, itemId, location: &position);
         }
 
         return false;
     }
 
-    public bool UseItemOnPosition(Vector3 position, uint itemId) => ActionManager.Instance()->UseActionLocation(ActionType.KeyItem /* TODO(api12): API12 has no EventItem; KeyItem is closest match */, itemId, location: &position);
+    public bool UseItemOnPosition(Vector3 position, uint itemId) => ActionManager.Instance()->UseActionLocation(ActionType.EventItem, itemId, location: &position);
 
     public bool UseAction(EAction action)
     {
@@ -547,8 +547,14 @@ internal sealed unsafe partial class GameFunctions
             return null;
         }
 
-        // B1: API12 UIState lacks UnlockLinksBitArray (game-7.5 field). Return empty list.
+        // porting-note(api13): restored 2026-09-02 — UIState.UnlockLinksBitArray exists in CS 6966
         List<uint> unlockedUnlockLinks = [];
+        foreach ((int index, bool isUnlocked) in uiState->UnlockLinksBitArray)
+        {
+            if (isUnlocked)
+                unlockedUnlockLinks.Add((uint)index);
+        }
+
         logger.LogInformation("Unlocked unlock links: {UnlockedUnlockLinks}", string.Join(", ", unlockedUnlockLinks));
         return unlockedUnlockLinks;
     }

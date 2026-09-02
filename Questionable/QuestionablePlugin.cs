@@ -133,6 +133,19 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         // porting-note(api13): replaces upstream's DisposeAsync. IDalamudPlugin is IDisposable
         // only, so the ServiceProvider is disposed synchronously; ECommons must come down after
         // it, and only if Init actually ran (the constructor calls Dispose on a failed load).
+        // Unhook Dalamud event sources (Framework.Update, UiBuilder callbacks, toast hooks, ...)
+        // before disposing the container: MS.DI marks the root scope disposed at the START of
+        // Dispose, and a framework tick in that window would hit a disposed scope. Its Dispose is
+        // idempotent, so MS.DI's own disposal pass is a no-op afterwards. (upstream f8739e3e)
+        try
+        {
+            _serviceProvider?.GetService<DalamudInitializer>()?.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Container already torn down elsewhere - nothing to unhook.
+        }
+
         _serviceProvider?.Dispose();
         _serviceProvider = null;
 
@@ -215,6 +228,13 @@ public sealed class QuestionablePlugin : IDalamudPlugin
         // a second independently-constructed instance.
         serviceCollection.AddSingleton<IAetheryteTerritoryProvider>(sp => sp.GetRequiredService<AetheryteData>());
         serviceCollection.AddSingleton<IQuestValidator>(sp => sp.GetRequiredService<JsonSchemaValidator>());
+
+        // Breaks the QuestController <-> MovementController ctor cycle without handing MovementController
+        // the whole IServiceProvider. Once .Value is evaluated the container isn't touched again, so a
+        // framework tick during shutdown can't hit a disposed scope through this path.
+        // (upstream f8739e3e; this file is pinned, so every new registration upstream adds must be
+        // carried over by hand — a missing one is a load-time DI failure the compiler cannot see.)
+        serviceCollection.AddSingleton(sp => new Lazy<QuestController>(sp.GetRequiredService<QuestController>));
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
         Initialize(serviceProvider);
