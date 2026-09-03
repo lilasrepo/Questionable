@@ -54,7 +54,7 @@ internal sealed class JournalData
         // resolve. Degrade to "skip the grouping" instead.
         Genre? collabQuests = genres.SingleOrDefault(g => g.Id.Equals(GenreCollaborationQuests));
         collabQuests?.Quests.Add(((ushort[])[
-            1153, 1154, 1155, 1556, // ffxiii 2013
+            1153, 1154, 1155, 1156, // ffxiii 2013
             1287, // ffxi 2014
             1288, // dqx
             2141, // yokai

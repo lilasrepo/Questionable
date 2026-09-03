@@ -43,6 +43,7 @@ internal sealed class CombatController : IDisposable
     private readonly MovementController _movementController;
     private readonly IObjectTable _objectTable;
     private readonly QuestFunctions _questFunctions;
+    private readonly IFramework _framework;
     private readonly ITargetManager _targetManager;
 
     private CurrentFight? _currentFight;
@@ -59,6 +60,7 @@ internal sealed class CombatController : IDisposable
         IClientState clientState,
         QuestFunctions questFunctions,
         ChatFunctions chatFunctions,
+        IFramework framework,
         ILogger<CombatController> logger)
     {
         _combatModules = [.. combatModules];
@@ -71,6 +73,7 @@ internal sealed class CombatController : IDisposable
         _clientState = clientState;
         _questFunctions = questFunctions;
         _chatFunctions = chatFunctions;
+        _framework = framework;
         _logger = logger;
 
         _clientState.TerritoryChanged += TerritoryChanged;
@@ -81,7 +84,7 @@ internal sealed class CombatController : IDisposable
     public void Dispose()
     {
         _clientState.TerritoryChanged -= TerritoryChanged;
-        Stop(_L("Dispose"));
+        IpcInvoke.TryOnFrameworkThread(_framework, () => Stop(_L("Dispose")), _logger);
     }
 
     public bool Start(CombatData combatData)

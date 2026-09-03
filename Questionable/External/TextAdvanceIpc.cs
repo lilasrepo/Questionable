@@ -1,4 +1,4 @@
-﻿using Dalamud.Plugin.Ipc;
+using Dalamud.Plugin.Ipc;
 namespace Questionable.External;
 
 [RegisterSingleton]
@@ -32,7 +32,7 @@ internal sealed class TextAdvanceIpc : IDisposable
     {
         _framework.Update -= OnUpdate;
         if (_isExternalControlActivated)
-            IpcInvoke.SafeAction(() => _disableExternalControl.InvokeFunc(_pluginName));
+            IpcInvoke.TryOnFrameworkThread(_framework, () => _disableExternalControl.InvokeFunc(_pluginName));
     }
 
     private void OnUpdate(IFramework framework)
