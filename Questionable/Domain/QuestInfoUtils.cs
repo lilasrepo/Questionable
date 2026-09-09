@@ -60,6 +60,10 @@ internal static class QuestInfoUtils
                 { Job.SGE, classJobCategory.SGE },
                 { Job.VPR, classJobCategory.VPR },
                 { Job.PCT, classJobCategory.PCT }
+                // porting-note(api13): upstream adds a raw-page read for Beastmaster
+                // (ClassJobCategory has no BST column yet). Dropped on TC: game 7.20 has no
+                // Beastmaster, the walk-back ECommons Job enum has no BST member, and api13's
+                // Lumina row structs expose neither ExcelPage nor RowOffset.
             }
             .Where(y => y.Value)
             .Select(y => y.Key)

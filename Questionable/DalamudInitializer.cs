@@ -1,7 +1,8 @@
-﻿﻿using System;
+﻿using System;
 using System.Globalization;
 using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text.SeStringHandling;
+
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -12,6 +13,8 @@ using Questionable.Controller.Utils;
 using Questionable.Functions;
 using Questionable.Windows;
 using static Questionable.Utils.LocalizeShortcut;
+using Lumina.Excel.Sheets;
+
 namespace Questionable;
 
 [RegisterSingleton]
@@ -32,6 +35,7 @@ internal sealed class DalamudInitializer : IDisposable
     private readonly IToastGui _toastGui;
     private readonly WindowSystem _windowSystem;
     private bool _disposed;
+    internal bool FlagGearUnequippable;
 
     public DalamudInitializer(
         IDalamudPluginInterface pluginInterface,
@@ -142,7 +146,22 @@ internal sealed class DalamudInitializer : IDisposable
 
     private void OnToast(ref SeString message, ref ToastOptions options, ref bool isHandled) => _logger.LogTrace("Normal Toast: {Message}", message);
 
-    private void OnErrorToast(ref SeString message, ref bool isHandled) => _logger.LogTrace("Error Toast: {Message}", message);
+    private void OnErrorToast(ref SeString message, ref bool isHandled)
+    {
+        if (DialogueReferenceResolver.IsMatch(
+                message.ToString(),
+                new(Svc.Data.GetExcelSheet<LogMessage>().GetRow(1951).Text.ToRegex())) // 'contains gear unequippable'
+            && _questController.IsRunning)
+        {
+            FlagGearUnequippable = true;
+            _logger.LogDebug("Toast: Gear Unequippable");
+        }
+        else if (FlagGearUnequippable)
+        {
+            FlagGearUnequippable = false;
+        }
+        _logger.LogTrace("Error Toast: {Message}", message);
+    }
 
     private void OnQuestToast(ref SeString message, ref QuestToastOptions options, ref bool isHandled) => _logger.LogTrace("Quest Toast: {Message}", message);
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -194,7 +194,6 @@ internal sealed class QuestData
 
         _quests = quests.ToDictionary(x => x.QuestId, x => x);
 
-        AddPreviousQuest(new(2898), new(2922));
         AddPreviousQuest(new(5008), new(4933));
         AddPreviousQuest(new(5012), new(4959));
         // workaround because the game doesn't require completion of the CT questline through normal means
@@ -212,6 +211,7 @@ internal sealed class QuestData
         const int tideGoesIn = 2490;
         const int firstOfMany = 2534;
         const int achtIaOrmhInn = 3320;
+        AddPreviousQuest(new(2898), new(2922));
         AddPreviousQuest(new(1480), new(2373));
         AddPreviousQuest(new(1717), new(mountaintopDiplomacy));
         AddPreviousQuest(new(2088), new(mountaintopDiplomacy));
@@ -355,6 +355,11 @@ internal sealed class QuestData
     public ImmutableHashSet<ItemReward> RedeemableItems { get; }
     public QuestId LastMainScenarioQuestId { get; }
 
+    /// <summary>
+    /// Adds a manual link to indicate that questToUpdate requires requiredQuestId to be completed first, so the former can be marked as locked
+    /// </summary>
+    /// <param name="questToUpdate">The QuestId of the quest that needs a prereq added</param>
+    /// <param name="requiredQuestId">The QuestId of the prereq</param>
     private void AddPreviousQuest(QuestId questToUpdate, QuestId requiredQuestId)
     {
         if (_quests.TryGetValue(questToUpdate, out IQuestInfo? quest) && quest is QuestInfo questInfo)
@@ -445,6 +450,8 @@ internal sealed class QuestData
             // DT
             Job.VPR => [176],
             Job.PCT => [177],
+            // porting-note(api13): Beastmaster is a 7.5 job; the walk-back ECommons Job
+            // enum stops at PCT (42). No BST value exists to map, so the EC arm is dropped.
             // Crafter
             Job.ALC => [48, 49, 50],
             Job.ARM => [36, 37, 38],

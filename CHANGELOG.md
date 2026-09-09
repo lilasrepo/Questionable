@@ -1,1 +1,1 @@
-- Feature: CN translation -ShadyWhite
+- Feature: Updated for 7.56 -alydev
