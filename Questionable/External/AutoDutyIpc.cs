@@ -1,6 +1,7 @@
 ﻿using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
 using Questionable.Model.Questing;
+using static Questionable.External.IPCUtils;
 namespace Questionable.External;
 
 [RegisterSingleton]
@@ -9,19 +10,24 @@ internal sealed class AutoDutyIpc
     IDalamudPluginInterface pluginInterface,
     Configuration configuration,
     TerritoryData territoryData,
-    ILogger<AutoDutyIpc> logger)
+    ILogger<AutoDutyIpc> logger) : Ipc
 {
+    public override string InternalName => "AutoDuty";
+    public override Version? GetVersion() => IPCSubscriber.Version(InternalName);
+    public override bool IsReady() => IpcInvoke.SafeFunc(() => GetVersion() != null && !_isStopped.InvokeFunc(), fallback: false);
+
     [Flags]
     public enum DutyMode : int
     {
-        None = 0,
-        Support = 1,
-        Trust = 2,
-        Squadron = 4,
-        Regular = 8,
-        Trial = 16,
-        Raid = 32,
-        Variant = 64
+        None = 0 << 0,
+        Support = 1 << 0,
+        Trust = 1 << 1,
+        Squadron = 1 << 2,
+        Regular = 1 << 3,
+        Trial = 1 << 4,
+        Raid = 1 << 5,
+        Variant = 1 << 6,
+        NoviceHall = 1 << 7
     }
 
     private readonly ICallGateSubscriber<uint, bool> _contentHasPath = pluginInterface.GetIpcSubscriber<uint, bool>("AutoDuty.ContentHasPath");

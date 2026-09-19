@@ -1,1 +1,1 @@
-- Feature: Updated for 7.56 -alydev
+- Feature: list all accepted quests that are hidden in the journal; clicking opens journal -alydev

@@ -65,6 +65,8 @@ internal sealed unsafe class QuestFunctions
         }
     }
 
+    private ushort? _gc;
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "<Pending>")]
     public QuestReference GetCurrentQuest(bool allowNewMsq = true)
     {
         QuestReference internalQuest = GetCurrentQuestInternal(allowNewMsq);
@@ -97,6 +99,15 @@ internal sealed unsafe class QuestFunctions
             if (IsQuestAccepted(currentQuest) || IsQuestComplete(currentQuest))
                 return new(currentQuest, sequence, questState);
 
+            if (configuration.General.GrandCompany.Equals(GrandCompany.None))
+            {
+                if (_gc == null)
+                {
+                    Random rand = new();
+                    _gc = (ushort)(rand.Next() % 2 + 680);
+                }
+                return new(new QuestId(_gc.Value), 0, questState);
+            }
             // The company you keep...
             return configuration.General.GrandCompany switch
             {
@@ -592,6 +603,7 @@ internal sealed unsafe class QuestFunctions
                     .FirstOrDefault(y => y != null);
     }
 
+    private string _last = string.Empty;
     private int TeleportCosts(Quest quest)
     {
         List<EAetheryteLocation> teleportTargets = quest.AllSteps()
@@ -609,7 +621,12 @@ internal sealed unsafe class QuestFunctions
         foreach (TeleportInfo info in telepo->TeleportList)
             teleportCosts.TryAdd(info.AetheryteId, info.GilCost);
 
-        return teleportTargets.Sum(x => (int)teleportCosts.GetValueOrDefault((uint)x, 999u));
+        var msg = $"TeleportCosts: {string.Join('+', teleportTargets)} " +
+            $"({string.Join(", ", teleportCosts.Where(x => teleportTargets.Contains((EAetheryteLocation)x.Key)).Select(x => $"{(EAetheryteLocation)x.Key}={x.Value}"))})";
+        if (msg != _last)
+            Svc.Log.Debug(msg);
+        _last = msg;
+        return teleportTargets.Sum(x => (int)teleportCosts.GetValueOrDefault((uint)x, 200u));
     }
 
     public List<ElementId> GetPriorityQuests(bool onlyClassAndRoleQuests = false)
@@ -625,6 +642,9 @@ internal sealed unsafe class QuestFunctions
 
             if (!configuration.Advanced.SkipCrystalTowerRaids)
                 priorityQuests.AddRange(QuestData.CrystalTowerQuests);
+
+            if (!configuration.Advanced.SkipFeistyLittleChocobo)
+                priorityQuests.Add(new QuestId(1162));
         }
 
         if (!configuration.Advanced.SkipClassJobQuests)
@@ -791,6 +811,17 @@ internal sealed unsafe class QuestFunctions
                 lockedReason.Add(_L("GC"));
             if (questInfo.GrandCompanyRank > GetGrandCompanyRank())
                 lockedReason.Add(_L("Rank"));
+        }
+
+        bool isClassQuest = questInfo.NewGamePlusChapter != 0 &&
+            QuestData.JobToClassQuestChapterIds.Values
+                .Any(x => x.Contains(questInfo.NewGamePlusChapter));
+        if ((isClassQuest && questInfo.ClassJobs.Count >= 1) || questInfo.ClassJobs.Count == 1)
+        {
+            var levels = PlayerState.Instance()->ClassJobLevels;
+            var index = questInfo.ClassJobs[0].GetData().ExpArrayIndex;
+            if (index >= 0 && levels.Length > index && levels[index] < questInfo.Level)
+                lockedReason.Add($"{_L("Low level")} ({questInfo.ClassJobs[0]})");
         }
 
         if (questInfo.AlliedSociety != EAlliedSociety.None)

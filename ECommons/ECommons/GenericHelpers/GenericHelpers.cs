@@ -34,6 +34,13 @@ public static unsafe partial class GenericHelpers
 {
     private static string UidPrefix = $"{Random.Shared.Next(0, 0xFFFF):X4}";
     private static ulong UidCnt = 0;
+    // porting-note(api13) GAP-FILL: present in the ECommons 3.2.1.15 canon (ICE tree), absent from
+    // this tree's 3.0.1.29. Copied verbatim; upstream Questionable's NameGenerator needs it.
+    public static bool NextBool(this Random random)
+    {
+        return random.Next(2) == 0;
+    }
+
     public static string GetTemporaryId() => $"{UidPrefix}{UidCnt++:X}";
 
     /// <summary>

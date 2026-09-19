@@ -203,8 +203,8 @@ internal sealed class Configuration : IPluginConfiguration
     internal sealed class GeneralConfiguration
     {
         public ECombatModule CombatModule { get; set; } = ECombatModule.None;
-        public uint MountId { get; set; } = 71;
-        public string ChocoboName { get; set; } = "Chicken";
+        public uint MountId { get; set; } = 1;
+        public string ChocoboName { get; set; } = string.Empty;
         public GrandCompany GrandCompany { get; set; } = GrandCompany.None;
         public Job CombatJob { get; set; } = Job.ADV;
         public Job CraftingJob { get; set; } = Job.CRP;
@@ -301,6 +301,7 @@ internal sealed class Configuration : IPluginConfiguration
         public bool SkipClassJobQuests { get; set; }
         public bool SkipARealmRebornHardModePrimals { get; set; }
         public bool SkipCrystalTowerRaids { get; set; }
+        public bool SkipFeistyLittleChocobo { get; set; }
         public bool PreventQuestCompletion { get; set; }
         public bool AbandonQuestBeforeCompletion { get; set; }
         public bool RemoveFromPriorityWhenAbandoned { get; set; }

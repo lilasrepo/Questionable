@@ -6,7 +6,7 @@ internal interface IPCUtils
     {
         internal static bool IsInstalled(string pluginName) => DalamudReflector.TryGetDalamudPlugin(pluginName, out IDalamudPlugin _, suppressErrors: false, ignoreCache: true);
 
-        internal static Version Version(string pluginName)
+        internal static Version? Version(string pluginName)
         {
             Version _version;
             if (DalamudReflector.TryGetDalamudPlugin(pluginName, out IDalamudPlugin? dalamudPlugin, suppressErrors: false, ignoreCache: true))

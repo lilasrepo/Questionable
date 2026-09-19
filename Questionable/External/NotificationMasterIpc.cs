@@ -1,4 +1,5 @@
 ﻿using NotificationMasterAPI;
+using static Questionable.External.IPCUtils;
 
 namespace Questionable.External;
 

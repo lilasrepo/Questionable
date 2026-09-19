@@ -445,13 +445,15 @@ internal sealed class PriorityWindow : LWindow
         List<ElementId> postARRUnlocks = ((ushort[])[
             // don't add DoH/DoL unlocks to this
             // Features
+            434, 435, 488, 3081, 3201, 437, 489, 436,  // gold saucer
+            1212, 565, // unlock LB, then second part of 436 ^, then unlock rest of housing districts
+            1213, 1214, // housing districts
             160, 1463, // materia
-            699, 3017, // dyes, glams
+            699, 3017, 1558, // dyes, glams
             1210, // aesthetician
             1211, // treasure maps
             1431, // challenge log
             1432, 1433, 1434, // retainers
-            1212, 1213, 1214, // housing districts
             1563, 1564, 1565, // hunts
             1004, 1005, 1006, // pvp
             4644, // island sanc visit
@@ -479,38 +481,39 @@ internal sealed class PriorityWindow : LWindow
             1556, // palace of the dead
             1308, // ultimates
             705, // ARR relics
-            1007, 1194, 1195, 1196, 1197, 1198, 1412, 1413, 1530, 90, // primal EX
+            1048,1157,1158,1194,1195,1196,1197,1198,1412,1413,1530,90, // primal EX
             1008, 1009, 1012, 433, // urth's fount chain
         ]).FromNumericListOfQuests();
         List<ElementId> jobUnlocks = ((ushort[])[
             // Gridania
-            181,131, // Archer
-            180,132, // Lancer
-            182,133, // Conjurer
-            184,138, // Carpenter
-            188,105, // Leatherworker
-            193,3, // Botanist
+            181,131,219, // Archer
+            180,132,218, // Lancer
+            182,133,211, // Conjurer
+            184,138,205, // Carpenter
+            188,105,209, // Leatherworker
+            193,3,208, // Botanist
             3261,3262, // Gunbreaker
             4854,4855, // Pictomancer
+            5490,5491, // Beastmaster
             // Limsa
-            179,310, // Marauder
-            451,452, // Arcanist
-            101,102, // Rogue
-            1134,1107, // Fisher
-            185,291, // Blacksmith
-            186,273, // Armorer
-            191,271, // Culinarian
+            179,310,312, // Marauder
+            451,452,454, // Arcanist
+            101,102,104, // Rogue
+            1134,1107,1108, // Fisher
+            185,291,292, // Blacksmith
+            186,273,274, // Armorer
+            191,271,254, // Culinarian
             3249,3250, // Dancer
-            3192, // Blue Mage
+            3192,3193, // Blue Mage
             4067,4068, // Sage
             // Uldah
-            177,285, // Gladiator
-            183,344, // Thaumaturge
-            178,532, // Pugilist
-            187,608, // Goldsmith
-            189,534, // Weaver
-            192,597, // Miner
-            190,575, // Alchemist
+            177,285,286, // Gladiator
+            183,344,346, // Thaumaturge
+            178,532,553, // Pugilist
+            187,608,610, // Goldsmith
+            189,534,535, // Weaver
+            190,575,577, // Alchemist
+            192,597,599, // Miner
             2559,2560, // Samurai
             2576,2577, // Red Mage
             4073,4074, // Reaper
@@ -534,26 +537,36 @@ internal sealed class PriorityWindow : LWindow
             5008,5239,                                          // nitowikwe
             5460,                                               // tiisol ja
         ]).FromNumericListOfQuests();
+        List<ElementId> unlockLeves = ((ushort[])[
+            693,220,687,    // Initial unlock
+            58,59,60,       // hest
+            694,695,696,14, // la noscea
+            221,443,444,    // shroud
+            688,692,15,     // thanalan
+            16,17,          // coerthas
+            18,             // mor dhona
+        ]).FromNumericListOfQuests();
         var aetherCurrents = _T<Addon>(2445);
         var roleQuests = _T<JournalCategory>(95);
         _builtInPresets = new(StringComparer.Ordinal)
         {
-            [JobQuestsPresetName] = [],
-            [_T<ContentRoulette>(8)] = ((ushort[])[4959, 5013, 5014]).FromNumericListOfQuests(),
-            [_L("Unlock all jobs")] = jobUnlocks,
+            [JobQuestsPresetName] = [], // Job Quests
+            [_T<ContentRoulette>(8)] = ((ushort[])[4959, 5013, 5014]).FromNumericListOfQuests(), // Level Cap Dungeons
             [_L("Gil (set TextAdvance to prefer Gil sacks)")] = gilList,
+            [_L("Unlock all jobs")] = jobUnlocks,
             [_L("Post-ARR unlocks")] = postARRUnlocks,
-            [_T<JournalGenre>(94)] = QuestData.DeliveryMoogleQuests.ToList(),
-            [_T<JournalCategory>(16)] = QuestData.HardModePrimals.Cast<ElementId>().ToList(),
-            [_T<JournalCategory>(18)] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(),
-            [_T<Addon>(5700)] = unlockCustomDeliveries,
-            [$"{_T<AchievementCategory>(37)}: {_T<BeastTribe>(8).Titleize()}"] = QuestData.UnlockMoogleSocietyQuests.ToList(),
-            [$"{aetherCurrents}: {_T<ExVersion>(1)}"] = GetAetherCurrentQuests(397, 398, 399, 400, 401),
+            [_T<Addon>(455)] = unlockLeves, // Levequests
+            [_T<JournalGenre>(94)] = QuestData.DeliveryMoogleQuests.ToList(), // Delivery Moogle Quests
+            [_T<JournalCategory>(16)] = QuestData.HardModePrimals.Cast<ElementId>().ToList(), // Primals
+            [_T<JournalCategory>(18)] = QuestData.CrystalTowerQuests.Cast<ElementId>().ToList(), // Crystal Tower
+            [_T<Addon>(5700)] = unlockCustomDeliveries, // Custom Deliveries
+            [$"{_T<AchievementCategory>(37)}: {_T<BeastTribe>(8).Titleize()}"] = QuestData.UnlockMoogleSocietyQuests.ToList(), // Moogles
+            [$"{aetherCurrents}: {_T<ExVersion>(1)}"] = GetAetherCurrentQuests(397, 398, 399, 400, 401), // Aether Currents
             [$"{aetherCurrents}: {_T<ExVersion>(2)}"] = GetAetherCurrentQuests(612, 613, 614, 620, 621, 622),
             [$"{aetherCurrents}: {_T<ExVersion>(3)}"] = GetAetherCurrentQuests(813, 814, 815, 816, 817, 818),
             [$"{aetherCurrents}: {_T<ExVersion>(4)}"] = GetAetherCurrentQuests(956, 957, 958, 959, 960, 961),
             [$"{aetherCurrents}: {_T<ExVersion>(5)}"] = GetAetherCurrentQuests(1187, 1188, 1189, 1190, 1191, 1192),
-            [$"{roleQuests}: {_T<Addon>(1082)}"] = _questData.GetRoleQuests(Job.PLD).Select(x => x.QuestId).ToList(),
+            [$"{roleQuests}: {_T<Addon>(1082)}"] = _questData.GetRoleQuests(Job.PLD).Select(x => x.QuestId).ToList(), // Role Quests
             [$"{roleQuests}: {_T<Addon>(1083)}"] = _questData.GetRoleQuests(Job.WHM).Select(x => x.QuestId).ToList(),
             [$"{roleQuests}: {_T<Addon>(1084)}"] = _questData.GetRoleQuests(Job.MNK).Select(x => x.QuestId).ToList(),
             [$"{roleQuests}: {_T<Addon>(1085)}"] = _questData.GetRoleQuests(Job.BRD).Select(x => x.QuestId).ToList(),

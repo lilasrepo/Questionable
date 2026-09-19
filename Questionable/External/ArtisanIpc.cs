@@ -1,15 +1,24 @@
 ﻿using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Ipc.Exceptions;
 using Questionable.Model.Questing;
+using static Questionable.External.IPCUtils;
 namespace Questionable.External;
 
 [RegisterSingleton]
-internal sealed class ArtisanIpc(IDalamudPluginInterface pluginInterface, ILogger<ArtisanIpc> logger)
+internal sealed class ArtisanIpc(IDalamudPluginInterface pluginInterface, ILogger<ArtisanIpc> logger) : Ipc
 {
+    public override string InternalName => "Artisan";
+    public override Version? GetVersion() => IPCSubscriber.Version(InternalName);
+    public override bool IsReady() => IpcInvoke.SafeFunc(() => GetVersion() != null && !_isBusy.InvokeFunc(), fallback: false);
+
     private readonly ICallGateSubscriber<ushort, int, object> _craftItem = pluginInterface.GetIpcSubscriber<ushort, int, object>("Artisan.CraftItem");
     private readonly ICallGateSubscriber<bool> _getEnduranceStatus = pluginInterface.GetIpcSubscriber<bool>("Artisan.GetEnduranceStatus");
     private readonly ICallGateSubscriber<bool> _isListRunning = pluginInterface.GetIpcSubscriber<bool>("Artisan.IsListRunning");
     private readonly ICallGateSubscriber<int, object> _startListById = pluginInterface.GetIpcSubscriber<int, object>("Artisan.StartListById");
+    private readonly ICallGateSubscriber<bool> _isBusy = pluginInterface.GetIpcSubscriber<bool>("Artisan.IsBusy");
+    // MUST RE-APPLY (TC-only): sub-craft aware craft start, paired with Artisan's own
+    // Artisan.CraftItemWithSubcrafts provider. Upstream has no equivalent; dropping it silently
+    // reduces crafter quests to a single-item craft. See feedback_preserve_questionable_artisan_subcraft_ipc.
     private readonly ICallGateSubscriber<ushort, int, object> _craftItemWithSubcrafts = pluginInterface.GetIpcSubscriber<ushort, int, object>("Artisan.CraftItemWithSubcrafts");
 
     public bool CraftItem(ushort recipeId, int quantity)
