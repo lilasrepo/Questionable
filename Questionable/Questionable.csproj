@@ -103,11 +103,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- B1: WrathCombo.API NuGet (API15) — combat module dropped (BossMod/RotationSolver still available) -->
-        <Compile Remove="Controller\CombatModules\WrathComboModule.cs" />
-    </ItemGroup>
-
-    <ItemGroup>
         <None Remove="Controller\CombatModules\BossModPreset_Overworld.json" />
         <None Remove="Controller\CombatModules\BossModPreset_QuestBattle.json" />
         <None Remove="Controller\CombatModules\BossModPreset_NormalMovement.json" />
