@@ -92,6 +92,7 @@ internal sealed class GeneralConfigComponent : ConfigComponent
             { "en",    _L("English") },
             { "ja-jp", _L("Japanese") },
             { "zh-cn", _L("Chinese (Simplified)") },
+            { "zh-tw", _L("Chinese (Traditional)") },
             { "ko",    _L("Korean") + " (WIP)" }
         };
         string language = Configuration.General.Language;
@@ -233,13 +234,6 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                     }
                 }
 
-                bool hideInAllInstances = Configuration.General.HideInAllInstances;
-                if (ImGui.Checkbox(_L("Hide quest window in all instanced duties"), ref hideInAllInstances))
-                {
-                    Configuration.General.HideInAllInstances = hideInAllInstances;
-                    Save();
-                }
-
                 bool useEscToCancelQuesting = Configuration.General.UseEscToCancelQuesting;
                 if (ImGui.Checkbox(_L("Use ESC to cancel questing/movement"), ref useEscToCancelQuesting))
                 {
@@ -254,12 +248,28 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                     Save();
                 }
 
+                bool questIcons = Configuration.General.QuestIcons;
+                if (ImGui.Checkbox(_L("Show quest icons"), ref questIcons))
+                {
+                    Configuration.General.QuestIcons = questIcons;
+                    Save();
+                }
+
+                bool hideInAllInstances = Configuration.General.HideInAllInstances;
+                if (ImGui.Checkbox(_L("Hide quest window in all instanced duties"), ref hideInAllInstances))
+                {
+                    Configuration.General.HideInAllInstances = hideInAllInstances;
+                    Save();
+                }
+
                 bool hideSponsorButton = Configuration.General.HideSponsorButton;
                 if (ImGui.Checkbox(_L("Hide Sponsor button"), ref hideSponsorButton))
                 {
                     Configuration.General.HideSponsorButton = hideSponsorButton;
                     Save();
                 }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip(_L("Takes effect next time the plugin is loaded"));
 
                 bool hideRemainingTasks = Configuration.General.HideRemainingTasks;
                 if (ImGui.Checkbox(_L("Hide remaining tasks"), ref hideRemainingTasks))
@@ -268,10 +278,17 @@ internal sealed class GeneralConfigComponent : ConfigComponent
                     Save();
                 }
 
-                bool questIcons = Configuration.General.QuestIcons;
-                if (ImGui.Checkbox(_L("Show quest icons"), ref questIcons))
+                bool hidePatch = Configuration.General.HidePatch;
+                if (ImGui.Checkbox(_L("Hide quest patch badge"), ref hidePatch))
                 {
-                    Configuration.General.QuestIcons = questIcons;
+                    Configuration.General.HidePatch = hidePatch;
+                    Save();
+                }
+
+                bool hideQuestStartedJob = Configuration.General.HideQuestStartedJob;
+                if (ImGui.Checkbox(_L("Hide which job a quest was started with"), ref hideQuestStartedJob))
+                {
+                    Configuration.General.HideQuestStartedJob = hideQuestStartedJob;
                     Save();
                 }
             }

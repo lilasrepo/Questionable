@@ -88,6 +88,8 @@ internal sealed class QuestInfo : IQuestInfo
         AlliedSocietyRank = (EAlliedSocietyRank)quest.BeastReputationRank.RowId;
         SocietyRepValue = quest.ReputationReward;
         ClassJobs = QuestInfoUtils.AsList(quest.ClassJobCategory0.ValueNullable!);
+        // Gap-fill (2026-09-23 refresh): upstream added the raw category for the tooltip.
+        ClassJobCategory = quest.ClassJobCategory0.Value;
         IsSeasonalEvent = quest.Festival.RowId != 0;
         // TC-only: upstream keeps only the bool, but TC needs the id -- see
         // EventInfoComponent, which has to ask whether THIS festival is running here.
@@ -168,6 +170,7 @@ internal sealed class QuestInfo : IQuestInfo
     public bool CanCancel { get; }
     public EAlliedSociety AlliedSociety { get; }
     public IReadOnlyList<Job> ClassJobs { get; }
+    public ClassJobCategory ClassJobCategory { get; }
     public EExpansionVersion Expansion { get; }
     public string SimplifiedName => BaseName
         .Replace(".", "", StringComparison.Ordinal)

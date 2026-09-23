@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
@@ -219,37 +220,39 @@ internal sealed partial class ActiveQuestComponent
                 }
 
                 var trackedQuests = GetTrackedQuests();
-
-                using (ImRaii.Child(
-                    "##trackedQuests",
-                    new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * (trackedQuests.Count > 5 ? 5 : trackedQuests.Count)),
-                    border: trackedQuests.Count > 5))
+                if (trackedQuests.Count > 0)
                 {
-                    foreach (IQuestInfo qInfo in trackedQuests)
+                    using (ImRaii.Child(
+                        "##trackedQuests",
+                        new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * (trackedQuests.Count > 5 ? 5 : trackedQuests.Count)),
+                        border: trackedQuests.Count > 5))
                     {
-                        if (!questFunctions.prereqCache.ContainsKey(qInfo.QuestId.Value))
-                            questFunctions.PopulatePrereqCache(qInfo.QuestId.Value, qInfo);
-                        (bool isLocked, string[]? reasons) = questFunctions.IsQuestLocked(qInfo.QuestId);
-                        QuestManager* questManager = QuestManager.Instance();
-                        (var _color, var icon, string status) = uiUtils.GetQuestStyle(qInfo.QuestId);
-                        bool acceptedButHidden = questFunctions.IsQuestAccepted(qInfo.QuestId) && questManager->GetQuestById(qInfo.QuestId.Value)->IsHidden;
-                        if (uiUtils.ChecklistItem(
-                            $"{qInfo.Name} ({qInfo.QuestId})",
-                            _color,
-                            icon,
-                            iconOverride: QuestJournalUtils.GetIconOverride((QuestInfo)qInfo, icon),
-                            onClick: () =>
-                            {
-                                AgentQuestJournal.Instance()->OpenForQuest(qInfo.QuestId.Value, type: 1);
-                            }))
+                        foreach (IQuestInfo qInfo in trackedQuests)
                         {
-                            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                            if (reasons != null && reasons.Length > 0)
-                                ImGui.SetTooltip(status + "\n  " + string.Join("\n  ", reasons));
-                            else if (acceptedButHidden)
-                                ImGui.SetTooltip(_L("This quest is accepted, but is hidden in your Journal."));
-                            else
-                                ImGui.SetTooltip(status);
+                            if (!questFunctions.prereqCache.ContainsKey(qInfo.QuestId.Value))
+                                questFunctions.PopulatePrereqCache(qInfo.QuestId.Value, qInfo);
+                            (bool isLocked, string[]? reasons) = questFunctions.IsQuestLocked(qInfo.QuestId);
+                            QuestManager* questManager = QuestManager.Instance();
+                            (var _color, var icon, string status) = uiUtils.GetQuestStyle(qInfo.QuestId);
+                            bool acceptedButHidden = questFunctions.IsQuestAccepted(qInfo.QuestId) && questManager->GetQuestById(qInfo.QuestId.Value)->IsHidden;
+                            if (uiUtils.ChecklistItem(
+                                $"{qInfo.Name} ({qInfo.QuestId})",
+                                _color,
+                                icon,
+                                iconOverride: QuestJournalUtils.GetIconOverride((QuestInfo)qInfo, icon),
+                                onClick: () =>
+                                {
+                                    AgentQuestJournal.Instance()->OpenForQuest(qInfo.QuestId.Value, type: 1);
+                                }))
+                            {
+                                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                                if (reasons != null && reasons.Length > 0)
+                                    ImGui.SetTooltip(status + "\n  " + string.Join("\n  ", reasons));
+                                else if (acceptedButHidden)
+                                    ImGui.SetTooltip(_L("This quest is accepted, but is hidden in your Journal."));
+                                else
+                                    ImGui.SetTooltip(status);
+                            }
                         }
                     }
                 }
@@ -262,12 +265,6 @@ internal sealed partial class ActiveQuestComponent
                 gatheringController.Stop(_L("Manual (no active quest)"));
             }
 
-            ImGui.SameLine();
-            quickAccessButtonsComponent.DrawPriorityQuestsButton();
-            ImGui.SameLine();
-            quickAccessButtonsComponent.DrawCleanUpButton();
-            ImGui.SameLine();
-            quickAccessButtonsComponent.DrawJournalProgressButton(showLabel: true);
             ImGui.SameLine();
             quickAccessButtonsComponent.DrawTroubleshootingButton(showLabel: true, highlighted: true);
         }
@@ -357,17 +354,22 @@ internal sealed partial class ActiveQuestComponent
                     ImGui.TextUnformatted(Shorten(currentQuest.Quest.Info.Name));
                 else
                     ImGui.TextUnformatted(_L("Quest: ") + Shorten(currentQuest.Quest.Info.Name));
+
                 ImGui.SameLine();
                 QstWidgets.Chip($"#{currentQuest.Quest.Id}", QstTheme.Info);
-                var acceptedJob = classJobUtils.LookupQuestStartJob(currentQuest.Quest.Id);
-                if (acceptedJob is not ECommons.ExcelServices.Job.ADV)
+
+                if (!configuration.General.HideQuestStartedJob)
                 {
-                    ImGui.SameLine();
-                    QstWidgets.Chip($"{acceptedJob}", QstTheme.Accent);
-                    if (ImGui.IsItemClicked())
-                        classJobUtils.SwitchClassJob(acceptedJob);
-                    if (ImGui.IsItemHovered())
-                        ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    var acceptedJob = classJobUtils.LookupQuestStartJob(currentQuest.Quest.Id);
+                    if (acceptedJob is not ECommons.ExcelServices.Job.ADV)
+                    {
+                        ImGui.SameLine();
+                        QstWidgets.Chip($"{acceptedJob}", QstTheme.Accent);
+                        if (ImGui.IsItemClicked())
+                            classJobUtils.SwitchClassJob(acceptedJob);
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    }
                 }
 
                 if (startedQuest.Quest.Root.Disabled)
@@ -505,6 +507,24 @@ internal sealed partial class ActiveQuestComponent
                         QstWidgets.Chip(metaDataId.ToString(CultureInfo.InvariantCulture), QstTheme.TextMuted);
                     }
                 }
+
+                if (!configuration.General.HidePatch)
+                {
+                    var patch = QuestPatchMapper.GetPatch(currentQuest.Quest.Id.Value);
+                    if (patch != null)
+                    {
+                        ImGui.SameLine();
+                        QstWidgets.Chip(patch, QstTheme.Danger);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                            ImGui.SetTooltip(_LF("This quest was added to the game in Patch {0}.\nClick here to view the changelog from this patch.", patch));
+                        }
+                        if (ImGui.IsItemClicked())
+                            MoreInfoUtils.SearchConsoleGamesWiki($"Patch {patch}");
+                    }
+                }
+
                 if (configuration.Advanced.Debug)
                 {
                     ImGui.SameLine();
@@ -621,12 +641,6 @@ internal sealed partial class ActiveQuestComponent
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(_L("Stop all actions now."));
 
-        ImGui.SameLine();
-        quickAccessButtonsComponent.DrawPriorityQuestsButton();
-        ImGui.SameLine();
-        quickAccessButtonsComponent.DrawCleanUpButton();
-        ImGui.SameLine();
-        quickAccessButtonsComponent.DrawJournalProgressButton();
         ImGui.SameLine();
         quickAccessButtonsComponent.DrawTroubleshootingButton(showLabel: true);
 
