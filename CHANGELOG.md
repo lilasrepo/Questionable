@@ -1,3 +1,2 @@
-- Feature: Patch number badge (click to open Console Games Wiki to the changelog page) -alydev
-- Feature: ^ new badge and quest-accepted-job badge can be hidden -alydev
-- Change: General and Advanced config tabs slightly reordered -alydev
+- Change: revert mount128/147 fix since apparently there's more things broken elsewhere -alydev
+  - it is now unbroken -alydev
